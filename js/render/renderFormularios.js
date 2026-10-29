@@ -633,18 +633,7 @@ window.imprimirBoletoHtml = (id) => {
     const globalLogo = document.getElementById('print-logo');
     if(globalLogo) globalLogo.classList.remove('hidden');
 
-    let html = `
-        <style>
-            @media print {
-                @page {
-                    margin: 0; 
-                }
-                body {
-                    margin: 1.5cm; 
-                }
-            }
-        </style>
-    `;
+    let html = ``; // La hoja A4 y sus márgenes se definen globalmente en style.css.
     
     const sUpper = (val) => (val || '').toString().toUpperCase();
     const sStr = (val) => (val || '').toString();
@@ -659,7 +648,7 @@ window.imprimirBoletoHtml = (id) => {
     if (data.tipo.includes('Permuta')) {
         html += `
             <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #000; text-align: justify;">
-                <h2 style="text-align: center; text-transform: uppercase; text-decoration: underline; margin-bottom: 30px; font-size: 18px;">BOLETO DE COMPRA VENTA AUTOMOTOR CON PERMUTA</h2>
+                <h2 style="text-align: center; text-transform: uppercase; text-decoration: underline; margin-bottom: 16px; font-size: 18px;">BOLETO DE COMPRA VENTA AUTOMOTOR CON PERMUTA</h2>
                 
                 <p>En la ciudad de <strong></strong>, Provincia de Entre Ríos, a los <strong>${window.formatDate(data.fecha)}</strong>, entre el señor/a <strong>${sUpper(data.vendedor)}</strong>, en adelante denominado "EL VENDEDOR", y el señor/a <strong>${sUpper(data.comprador)}</strong>, D.N.I. N° <strong>${sStr(data.dni)}</strong>, domiciliado en calle <strong>${sStr(data.domicilio)}</strong> de la localidad de <strong>${sUpper(data.locComp)}</strong>, teléfono <strong>${sStr(data.telefono)}</strong>, en adelante denominado "EL COMPRADOR", convienen en celebrar el presente contrato de Compra-Venta, sujeto a las siguientes cláusulas y condiciones:</p>
 
@@ -700,7 +689,7 @@ window.imprimirBoletoHtml = (id) => {
     } else {
         html += `
             <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #000; text-align: justify;">
-                <h2 style="text-align: center; text-transform: uppercase; text-decoration: underline; margin-bottom: 30px; font-size: 18px;">BOLETO DE COMPRA VENTA AUTOMOTOR</h2>
+                <h2 style="text-align: center; text-transform: uppercase; text-decoration: underline; margin-bottom: 16px; font-size: 18px;">BOLETO DE COMPRA VENTA AUTOMOTOR</h2>
                 
                 <p>En la ciudad de <strong>${sUpper(data.ciudadFirma)}</strong>, a los <strong>${window.formatDate(data.fecha)}</strong>, entre <strong>${sUpper(data.vendedor)}</strong>, domiciliado en <strong>${sStr(data.vendedorDomicilio)}</strong> de la localidad de <strong>${sStr(data.vendedorLoc)}</strong>, teléfono <strong>${sStr(data.vendedorTel)}</strong>, por una parte, en adelante "EL VENDEDOR", y por la otra parte el señor/a <strong>${sUpper(data.comprador)}</strong>, D.N.I. N° <strong>${sStr(data.dni)}</strong>, domiciliado en calle <strong>${sStr(data.domicilio)}</strong> de la localidad de <strong>${sStr(data.locComp)}</strong>, teléfono <strong>${sStr(data.telefono)}</strong>, en adelante "EL COMPRADOR", convienen en celebrar el presente boleto de compraventa, sujeto a las siguientes cláusulas:</p>
 

@@ -235,3 +235,53 @@ input[type="number"]::-webkit-outer-spin-button {
         display: block !important; 
     }
 }
+
+/* Encabezado compacto para los boletos y formularios impresos de Martinelli.
+   La imagen blanca/negra es independiente del icono oscuro de la app. */
+.martinelli-print-header {
+  width: 54mm;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 2mm;
+  text-align: center;
+}
+.martinelli-print-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+@media print {
+  @page { size: A4 portrait; margin: 8mm 10mm 10mm; }
+  html, body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  #print-section {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+  #print-logo {
+    width: 54mm;
+    max-width: 100%;
+    margin: 0 auto 1.5mm !important;
+    padding: 0 !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #print-logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  #print-content { margin: 0; padding: 0; }
+  #print-content h2 { break-after: avoid; page-break-after: avoid; }
+}
