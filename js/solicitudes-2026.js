@@ -108,10 +108,10 @@
       if (!auto || auto.estado === 'Vendido') return false;
       if (cliente.autoId === auto.id) return true;
       const marca = normalizar(auto.marca), modelo = normalizar(auto.modelo);
-      const modelRegex = modelo && new RegExp('(^| )' + modelo.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '( |$)');
-      const modelHit = !!(modelo.length >= 4 && modelRegex?.test(texto));
-      const makeHit = !!(marca.length >= 3 && texto.includes(' ' + marca + ' '));
-      return modelHit && (makeHit || modelo.length >= 6);
+      const modelTokens = modelo.split(' ').filter(t => t.length >= 3 && !['manual','automatico','sedan','hatchback','full','base'].includes(t));
+      const hayMarca = !!(marca && texto.includes(' ' + marca + ' '));
+      const modelos = modelTokens.filter(token => texto.includes(' ' + token + ' '));
+      return modelos.length > 0 && (hayMarca || modelos.some(t => t.length >= 5));
     });
   };
   window.actualizarFacturaCaja = () => {
