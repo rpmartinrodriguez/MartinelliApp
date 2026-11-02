@@ -114,10 +114,7 @@ window.renderAutosView = () => {
         
       const kmFmt = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : 0;
 
-      const interesados = leadsPermitidos.filter(c => {
-          const interes = (c.marcaInteres || '').toLowerCase();
-          return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-      });
+      const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
       const badgeInteresados = interesados.length > 0 
           ? `<div class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg flex items-center z-20 animate-pulse"><i data-lucide="zap" class="w-3 h-3 mr-1"></i> ${interesados.length} INTERESADOS</div>` 
           : '';
@@ -209,10 +206,7 @@ window.renderAutosView = () => {
         
       const kmFmt = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : 0;
 
-      const interesados = leadsPermitidos.filter(c => {
-          const interes = (c.marcaInteres || '').toLowerCase();
-          return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-      });
+      const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
       const interesIcon = interesados.length > 0 ? `<i data-lucide="zap" class="w-3 h-3 text-indigo-500 inline ml-2 animate-pulse" title="${interesados.length} Interesados"></i>` : '';
 
       listHtml += `
@@ -284,10 +278,7 @@ window.renderDetalleAuto = () => {
     leadsPermitidos = leadsPermitidos.filter(c => validUsers.includes(c.userId));
   }
 
-  const interesados = leadsPermitidos.filter(c => {
-      const interes = (c.marcaInteres || '').toLowerCase();
-      return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-  });
+  const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
   
   if (!window.state.isVentaMode) {
     let badgeClass = auto.estado === 'Señado' ? 'bg-purple-800 text-white dark:bg-purple-300 dark:text-purple-900' : 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900';
