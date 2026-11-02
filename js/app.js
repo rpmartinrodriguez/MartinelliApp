@@ -98,14 +98,34 @@ window.bootApp = async (authUser) => {
         window.state.currentUser = { ...p, id: authUser.uid, email: authUser.email };
         const names = ['autos','usuarios','sucursales','transacciones',
                        'ventas','formularios','consultas','comisiones','cierres_personal'];
+        // CRM con consulta acotada al rol: evita descargar carteras ajenas.
+        const queryCRM = () => {
+            const base = window.collection(window.db, 'consultas');
+            if (p.rol === 'Admin') return base;
+            if (p.rol === 'Encargado')
+                return window.fbQuery(base, window.fbWhere('sucursalId', '==', p.sucursalId || null));
+            return window.fbQuery(base, window.fbWhere('userId', '==', authUser.uid));
+        };
         const results = await Promise.all(names.map(name =>
-            window.fbGetDocsFromServer(window.collection(window.db, name))
+            window.fbGetDocsFromServer(name === 'consultas' ? queryCRM() : window.collection(window.db, name))
         ));
         names.forEach((name, i) => {
             window.state[name] = results[i].docs.map(d => ({ id: d.id, ...d.data() }));
         });
         window.initSelects?.();
         window.launchApp?.();
+        // Escuchar cambios de flota y CRM en tiempo real (otros vendedores / otros dispositivos).
+        window.crmLiveUnsub?.(); window.flotaLiveUnsub?.();
+        window.crmLiveUnsub = window.fbOnSnapshot(queryCRM(), snapshot => {
+            if(window.state.currentUser?.id !== authUser.uid)return;
+            window.state.consultas = snapshot.docs.map(d => ({id:d.id,...d.data()}));
+            window.reRenderActiveViews?.(); window.updateNotifications?.();
+        }, err => console.error('CRM en tiempo real:',err));
+        window.flotaLiveUnsub = window.fbOnSnapshot(window.collection(window.db,'autos'), snapshot => {
+            if(window.state.currentUser?.id !== authUser.uid)return;
+            window.state.autos = snapshot.docs.map(d => ({id:d.id,...d.data()}));
+            window.reRenderActiveViews?.(); window.updateNotifications?.();
+        }, err => console.error('Flota en tiempo real:',err));
     } catch (e) {
         console.error('Error al iniciar Martinelli:', e);
         window.state.currentUser = null;
@@ -125,6 +145,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (user) {
                 await window.bootApp(user);
             } else {
+                window.crmLiveUnsub?.(); window.flotaLiveUnsub?.();
+                window.crmLiveUnsub = null; window.flotaLiveUnsub = null;
                 window.state.currentUser = null;
                 document.getElementById('app-loader')?.classList.add('hidden');
                 window.showLogin?.();
