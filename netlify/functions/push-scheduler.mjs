@@ -29,17 +29,30 @@ export default async () => {
   const db=getDb();
   webpush.setVapidDetails(process.env.VAPID_SUBJECT,
     process.env.VAPID_PUBLIC_KEY,process.env.VAPID_PRIVATE_KEY);
-  const autosSnap=await db.collection('autos').where('createdAt','>=',Date.now()-24*60*60*1000).limit(200).get();
-  const leadsSnap=await db.collection('consultas').limit(2000).get();
-  const autos=autosSnap.docs.map(d=>({id:d.id,...d.data()})),clientes=leadsSnap.docs.map(d=>({id:d.id,...d.data()}));
   const date=today(),now=Date.now();
+  const jobRef=db.collection('push_jobs').doc('crm-stock');
+  const oldJob=await jobRef.get();
+  const last=oldJob.exists ? oldJob.data() : {};
+  const desde=Number(last.lastStockScan || now-24*60*60*1000);
+  const horaArg=Number(new Intl.DateTimeFormat('en-GB',{hour:'2-digit',hour12:false,
+    timeZone:'America/Argentina/Buenos_Aires'}).format(new Date()));
+  const recordatoriosDiarios=horaArg >= 9 && last.ultimaFechaRecordatorios!==date;
+  // No volver a leer todo el CRM cada diez minutos si no hay autos nuevos.
+  const autosSnap=await db.collection('autos').where('createdAt','>',desde)
+    .where('createdAt','<=',now).limit(200).get();
+  const autos=autosSnap.docs.map(d=>({id:d.id,...d.data()}));
+  if(!autos.length && !recordatoriosDiarios){
+    await jobRef.set({lastStockScan:now},{merge:true}); return;
+  }
+  const leadsSnap=await db.collection('consultas').limit(2000).get();
+  const clientes=leadsSnap.docs.map(d=>({id:d.id,...d.data()}));
   const events=[];
   for(const c of clientes){
     if(!c.userId)continue;
     for(const a of autos)if(matches(c,a))
       events.push({userId:c.userId,key:'stock:'+c.id+':'+a.id,title:'Vehículo disponible',
         body:'Un '+a.marca+' '+a.modelo+' coincide con el interés de '+c.nombre+'.',url:'/?cliente='+encodeURIComponent(c.id)});
-    for(const h of (c.historial||[]))if(!h.completado && h.proximoContacto && h.proximoContacto<=date)
+    if(recordatoriosDiarios) for(const h of (c.historial||[]))if(!h.completado && h.proximoContacto && h.proximoContacto<=date)
       events.push({userId:c.userId,key:'seguimiento:'+c.id+':'+h.id+':'+date,title:'Seguimiento de cliente',
         body:'Tenés que contactar a '+c.nombre+'.',url:'/?cliente='+encodeURIComponent(c.id)});
   }
@@ -72,6 +85,7 @@ export default async () => {
     if(count>0){enviados+=count;await ref.update({estado:'enviado',enviadoEn:Date.now(),dispositivos:count});}
     else await ref.delete().catch(()=>{});
   }
+  await jobRef.set({lastStockScan:now,...(recordatoriosDiarios?{ultimaFechaRecordatorios:date}:{})},{merge:true});
   console.log('Push entregadas al servicio:',enviados);
 };
 export const config={schedule:'*/10 * * * *'};
