@@ -342,6 +342,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div class="bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-sm">
                             <h3 class="font-black text-xl mb-6">Usuarios</h3>
+<button type="button" onclick="window.indexarCRMExistente()" class="mb-3 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs border border-indigo-200">Indexar clientes anteriores (solo admin)</button>
                             <form onsubmit="window.handleSaveUser(event)" class="mb-6 space-y-4 bg-neutral-50 dark:bg-neutral-800/50 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-700">
                                 <input id="new-user-name" required placeholder="Nombre" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold" />
                                 <input id="new-user-email" type="email" required placeholder="Email" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold" />
@@ -582,6 +583,7 @@
     <script src="js/backup.js"></script>
     <script src="js/recovery.js"></script>
     <script src="js/solicitudes-2026.js"></script>
+    <script src="js/crm-indices.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
