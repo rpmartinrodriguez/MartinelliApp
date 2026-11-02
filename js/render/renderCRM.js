@@ -14,8 +14,8 @@ window.renderClientesView = () => {
     if (headerDiv && !document.getElementById('search-crm')) {
         headerDiv.className = "mb-6 flex flex-col sm:flex-row justify-between items-center gap-4";
         headerDiv.innerHTML = `
-            <button onclick="window.openModal('modal-nuevo-lead')" class="bg-black text-white dark:bg-white dark:text-black px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center w-full sm:w-auto justify-center shrink-0">
-                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Nuevo Lead
+            <button onclick="window.abrirFormularioCliente()" class="bg-black text-white dark:bg-white dark:text-black px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center w-full sm:w-auto justify-center shrink-0">
+                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Nuevo Cliente
             </button>
             <div class="relative w-full sm:w-96">
                 <i data-lucide="search" class="absolute left-4 top-3.5 w-4 h-4 text-neutral-400"></i>
@@ -60,7 +60,7 @@ window.renderClientesView = () => {
                 <td colspan="4" class="text-center py-10 text-neutral-500 font-bold">
                     <div class="flex flex-col items-center justify-center">
                         <i data-lucide="inbox" class="w-8 h-8 mb-3 opacity-50"></i>
-                        ${query ? 'No se encontraron clientes con esa búsqueda.' : 'No hay clientes/leads en tu cartera.'}
+                        ${query ? 'No se encontraron clientes con esa búsqueda.' : 'No hay clientes en tu cartera.'}
                     </div>
                 </td>
             </tr>
@@ -109,11 +109,10 @@ window.renderClientesView = () => {
                 `;
             }
         } else {
-            const interesTexto = (c.marcaInteres || '').toLowerCase();
+            const interesTexto = ((c.marcaInteres || '') + ' ' + (c.notas || '')).toLowerCase();
             const coincidencias = window.state.autos.filter(a => {
                 return a.estado !== 'Vendido' && (
-                    interesTexto.includes(a.marca.toLowerCase()) || 
-                    interesTexto.includes(a.modelo.toLowerCase())
+                    window.coincidenciasClientesFlota(c, [a]).length > 0
                 );
             });
 
@@ -241,11 +240,10 @@ window.openDetalleLead = (id) => {
             `;
         }
     } else if (lead.estadoLead !== 'Vendido') {
-        const interesTexto = (lead.marcaInteres || '').toLowerCase();
+        const interesTexto = ((lead.marcaInteres || '') + ' ' + (lead.notas || '')).toLowerCase();
         const coincidencias = window.state.autos.filter(a => {
             return a.estado !== 'Vendido' && (
-                interesTexto.includes(a.marca.toLowerCase()) || 
-                interesTexto.includes(a.modelo.toLowerCase())
+                window.coincidenciasClientesFlota(lead, [a]).length > 0
             );
         });
 
