@@ -337,10 +337,11 @@ window.openDetalleLead = (id) => {
                     <label class="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1 pl-1">
                         Teléfono
                     </label>
-                    <input id="edit-lead-tel" required value="${lead.telefono}" class="w-full rounded-xl px-4 py-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 outline-none font-bold focus:border-green-500 transition-colors" />
+                    <input id="edit-lead-tel" type="tel" required value="${lead.telefono}" class="w-full rounded-xl px-4 py-3 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 outline-none font-bold focus:border-green-500 transition-colors" />
                 </div>
             </div>
             
+            <div><a class="inline-flex items-center gap-2 text-green-700 font-black text-xs mb-2" href="${window.whatsappCliente?.(lead.telefono) || '#'}" target="_blank" rel="noopener noreferrer"><i data-lucide="message-circle" class="w-4 h-4"></i> Hablar por WhatsApp</a></div>
             <div>
                 <label class="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1 pl-1">
                     Interés Inicial
