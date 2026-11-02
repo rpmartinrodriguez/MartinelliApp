@@ -23,11 +23,11 @@ const getDb=()=>{
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 export default async () => {
-  if(!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.FIREBASE_SERVICE_ACCOUNT_JSON){
+  if(!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY || !process.env.FIREBASE_SERVICE_ACCOUNT_JSON || !process.env.VAPID_SUBJECT){
     console.warn('Push sin credenciales configuradas'); return;
   }
   const db=getDb();
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:admin@martinelli.com',
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT,
     process.env.VAPID_PUBLIC_KEY,process.env.VAPID_PRIVATE_KEY);
   const autosSnap=await db.collection('autos').where('createdAt','>=',Date.now()-24*60*60*1000).limit(200).get();
   const leadsSnap=await db.collection('consultas').limit(2000).get();
