@@ -53,10 +53,32 @@ service cloud.firestore {
       allow create, update: if isMember();
       allow delete: if isAdmin();
     }
+    // Cartera individual: vendedores solo pueden leer/editar sus propios clientes.
+    // Encargados: su sucursal. Administradores: todos.
     match /consultas/{id} {
-      allow read: if isMember();
-      allow create, update: if isMember();
-      allow delete: if isAdmin();
+      function canSee() {
+        return isAdmin()
+          || (isMember() && resource.data.userId == request.auth.uid)
+          || (isManager() && resource.data.sucursalId == get(profilePath()).data.sucursalId);
+      }
+      allow get, list: if isMember() && canSee();
+      allow create: if isMember()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.sucursalId == get(profilePath()).data.sucursalId;
+      allow update: if isMember() && canSee()
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.sucursalId == resource.data.sucursalId;
+      allow delete: if isMember() && canSee();
+    }
+    // Un índice de coincidencias sin acceso a los datos de la cartera ajena.
+    match /crm_indices/{hash} {
+      allow get: if isMember();
+      allow list: if false;
+      allow create: if isMember() && request.resource.data.keys().hasOnly(['userId','clienteId','fecha'])
+        && request.resource.data.keys().hasAll(['userId','clienteId'])
+        && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update: if false;
+      allow delete: if isAdmin() || (isMember() && resource.data.userId == request.auth.uid);
     }
     match /formularios/{id} {
       allow read: if isMember();
