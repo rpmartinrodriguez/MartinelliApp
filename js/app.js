@@ -114,6 +114,9 @@ window.bootApp = async (authUser) => {
         });
         window.initSelects?.();
         window.launchApp?.();
+        // Abrir la ficha al tocar una notificación, solo después de autenticar.
+        const deepClient = new URLSearchParams(location.search).get("cliente");
+        if (deepClient) setTimeout(() => { if (window.state.consultas?.some(c=>c.id===deepClient)) { window.switchTab?.("crm"); window.openDetalleLead?.(deepClient); } }, 550);
         // Escuchar cambios de flota y CRM en tiempo real (otros vendedores / otros dispositivos).
         window.crmLiveUnsub?.(); window.flotaLiveUnsub?.();
         window.crmLiveUnsub = window.fbOnSnapshot(queryCRM(), snapshot => {
