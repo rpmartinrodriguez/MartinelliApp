@@ -114,7 +114,8 @@ window.editAuto = (id) => {
     document.getElementById('auto-color').value = auto.color || ''; 
     document.getElementById('auto-km').value = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : ''; 
     document.getElementById('auto-anio').value = auto.año; 
-    document.getElementById('auto-patente').value = auto.patente; 
+    document.getElementById('auto-patente').value = auto.patente;
+    document.getElementById('auto-instagram').value = auto.instagramUrl || ''; 
     document.getElementById('auto-precio').value = window.formatMoney(auto.precio).replace(/[^0-9]/g, ''); 
     document.getElementById('auto-costo').value = window.formatMoney(auto.costo || 0).replace(/[^0-9]/g, ''); 
     document.getElementById('auto-condicion').value = auto.condicion || 'Propio'; 
@@ -160,7 +161,8 @@ window.handleAutoSubmit = async (e) => {
             color: document.getElementById('auto-color').value.toUpperCase(), 
             km: Number(document.getElementById('auto-km').value.replace(/[^0-9]/g, '')), 
             año: Number(document.getElementById('auto-anio').value), 
-            patente: document.getElementById('auto-patente').value.toUpperCase(), 
+            patente: document.getElementById('auto-patente').value.toUpperCase(),
+            instagramUrl: window.validarInstagramUrl(document.getElementById('auto-instagram').value), 
             precio: Number(document.getElementById('auto-precio').value.replace(/[^0-9]/g, '')), 
             costo: Number(document.getElementById('auto-costo').value.replace(/[^0-9]/g, '')), 
             condicion: document.getElementById('auto-condicion').value, 
@@ -773,11 +775,13 @@ window.handleGlobalLeadSubmit = async (e) => {
     }
     
     try {
+        if (await window.comprobarClienteExistente(document.getElementById("gl-nombre").value, document.getElementById("gl-tel").value)) return;
         await window.fbAdd("consultas", {
-            autoId: null,
+            autoId: document.getElementById("gl-auto")?.value || null,
             nombre: document.getElementById('gl-nombre').value,
             telefono: document.getElementById('gl-tel').value,
             marcaInteres: document.getElementById('gl-interes').value,
+            estadoLead: document.getElementById('gl-estado').value,
             notas: document.getElementById('gl-nota').value,
             fecha: new Date().toISOString().split('T')[0],
             userId: window.state.currentUser.id,
@@ -826,6 +830,7 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
     try {
         const auto = window.state.autos.find(x => x.id === autoId);
         
+        if (await window.comprobarClienteExistente(document.getElementById('dac-nombre').value,document.getElementById('dac-tel').value)) return;
         await window.fbAdd("consultas", { 
             autoId: autoId, 
             marcaInteres: `${auto.marca} ${auto.modelo}`, 
@@ -885,6 +890,7 @@ window.handleEditLeadSubmit = async (e, id) => {
         const nombreLead = document.getElementById('edit-lead-nombre').value;
         const telefonoLead = document.getElementById('edit-lead-tel').value;
         const notasLead = document.getElementById('edit-lead-nota').value;
+        if (await window.comprobarClienteExistente(nombreLead, telefonoLead, id)) return;
         
         await window.fbUpdate("consultas", id, { 
             nombre: nombreLead, 
@@ -1178,20 +1184,7 @@ window.agregarCategoria = async () => {
     } 
 };
 
-window.handleComprobanteChange = (val) => { 
-    const c = document.getElementById('caja-iva-container'); 
-    const i = document.getElementById('caja-iva'); 
-    
-    if (val === 'A') { 
-        c.classList.remove('hidden'); 
-        i.required = true; 
-    } else { 
-        c.classList.add('hidden'); 
-        i.required = false; 
-        i.value = ''; 
-    } 
-};
-
+window.handleComprobanteChange = () => window.actualizarFacturaCaja();
 window.marcarCobrado = async (id) => { 
     await window.fbUpdate("transacciones", id, { estadoCobro: 'disponible' }); 
     window.closeModal('modal-pendientes'); 
@@ -1200,6 +1193,7 @@ window.marcarCobrado = async (id) => {
 window.openModalCaja = () => {
     window.state.editingTransaccionId = null;
     document.getElementById('form-caja').reset();
+    window.actualizarFacturaCaja();
     const currentUser = window.state.currentUser;
     const selectedId = currentUser.rol === 'Admin'
         ? document.getElementById('caja-user-filter')?.value
@@ -1237,7 +1231,9 @@ window.editTransaccion = (id) => {
     }
     if (document.getElementById('caja-comprobante')) {
         document.getElementById('caja-comprobante').value = t.tipoComprobante || 'X';
-        if (window.handleComprobanteChange) window.handleComprobanteChange(t.tipoComprobante || 'X');
+        const facturada = document.getElementById('caja-facturada');
+        if (facturada) facturada.checked = ['A','B','C'].includes(t.tipoComprobante);
+        window.actualizarFacturaCaja();
     }
     if (document.getElementById('caja-comp-num')) {
         document.getElementById('caja-comp-num').value = t.numComprobante || '';
@@ -1391,9 +1387,9 @@ window.handleCajaSubmit = async (e) => {
             categoria: catTx,
             valor: montoTx,
             autoId: autoIdSel, 
-            tipoComprobante: document.getElementById('caja-comprobante').value,
-            numComprobante: document.getElementById('caja-comp-num').value, 
-            iva: Number(document.getElementById('caja-iva').value.replace(/[^0-9]/g, '') || 0),
+            tipoComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comprobante').value : 'X',
+            numComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comp-num').value : '', 
+            iva: document.getElementById('caja-facturada')?.checked && document.getElementById('caja-comprobante').value === 'A' ? Math.round(montoTx * 21 / 121) : 0,
             estadoCobro: 'disponible'
         };
 
