@@ -776,7 +776,7 @@ window.handleGlobalLeadSubmit = async (e) => {
     
     try {
         if (await window.comprobarClienteExistente(document.getElementById("gl-nombre").value, document.getElementById("gl-tel").value)) return;
-        await window.fbAdd("consultas", {
+        await window.crearClienteUnico({
             autoId: document.getElementById("gl-auto")?.value || null,
             nombre: document.getElementById('gl-nombre').value,
             telefono: document.getElementById('gl-tel').value,
@@ -831,7 +831,7 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
         const auto = window.state.autos.find(x => x.id === autoId);
         
         if (await window.comprobarClienteExistente(document.getElementById('dac-nombre').value,document.getElementById('dac-tel').value)) return;
-        await window.fbAdd("consultas", { 
+        await window.crearClienteUnico({ 
             autoId: autoId, 
             marcaInteres: `${auto.marca} ${auto.modelo}`, 
             nombre: document.getElementById('dac-nombre').value, 
@@ -892,7 +892,7 @@ window.handleEditLeadSubmit = async (e, id) => {
         const notasLead = document.getElementById('edit-lead-nota').value;
         if (await window.comprobarClienteExistente(nombreLead, telefonoLead, id)) return;
         
-        await window.fbUpdate("consultas", id, { 
+        await window.actualizarClienteUnico(id, { 
             nombre: nombreLead, 
             telefono: telefonoLead, 
             notas: notasLead
@@ -922,7 +922,7 @@ window.handleEditLeadSubmit = async (e, id) => {
 window.deleteLead = async (id) => {
     if (confirm('¿Estás seguro de eliminar permanentemente a este interesado de tu cartera?')) {
         try {
-            await window.fbDelete("consultas", id);
+            await window.eliminarClienteUnico(id);
             
             window.closeModal('modal-detalle-lead');
             
