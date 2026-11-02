@@ -102,8 +102,8 @@ window.bootApp = async (authUser) => {
         const queryCRM = () => {
             const base = window.collection(window.db, 'consultas');
             if (p.rol === 'Admin') return base;
-            if (p.rol === 'Encargado')
-                return window.fbQuery(base, window.fbWhere('sucursalId', '==', p.sucursalId || null));
+            if (p.rol === 'Encargado' && p.sucursalId)
+                return window.fbQuery(base, window.fbWhere('sucursalId', '==', p.sucursalId));
             return window.fbQuery(base, window.fbWhere('userId', '==', authUser.uid));
         };
         const results = await Promise.all(names.map(name =>
