@@ -9,7 +9,7 @@
     else if (n.startsWith('54')) n = n.slice(2);
     if (n.startsWith('0')) n = n.slice(1);
     // Se admite formato argentino 03446 15 123456, +54 9 3446 123456, o 3446 123456.
-    n = n.replace(/^(\\d{2,4})15(?=\\d{6,8}$)/, '$1');
+    n = n.replace(/^(\d{2,4})15(?=\d{6,8}$)/, '$1');
     if (n.startsWith('15') && n.length > 10) n = n.slice(2);
     return n;
   };
