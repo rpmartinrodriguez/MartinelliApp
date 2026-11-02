@@ -96,6 +96,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Suscripciones: cada usuario registra exclusivamente sus propios dispositivos.
+    match /push_subscriptions/{id} {
+      allow get, list: if isMember() && resource.data.userId == request.auth.uid;
+      allow create: if isMember() && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId','endpoint','keys','activo','creadoEn']);
+      allow update: if isMember() && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if isMember() && resource.data.userId == request.auth.uid;
+    }
+    // Envíos se administran solo desde el servidor (Firebase Admin SDK).
+    match /push_envios/{id} { allow read, write: if false; }
+
     // Todo dato fuera de las colecciones conocidas queda denegado.
     match /{document=**} {
       allow read, write: if false;
