@@ -44,5 +44,11 @@
       alert('¡Notificaciones push activadas para este dispositivo!');
     } catch(err){console.error('Error activando push',err);alert('No se pudieron activar las push: '+(err.message||'revisá los permisos.'));}
   };
-  document.addEventListener('DOMContentLoaded',()=>window.prepararPush());
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if('serviceWorker' in navigator) {
+      try { await navigator.serviceWorker.register('/sw.js',{scope:'/'}); }
+      catch(err) { console.warn('No se pudo registrar el service worker',err); }
+    }
+    window.prepararPush();
+  });
 })();
