@@ -59,16 +59,16 @@ service cloud.firestore {
       function canSee() {
         return isAdmin()
           || (isMember() && resource.data.userId == request.auth.uid)
-          || (isManager() && resource.data.sucursalId == get(profilePath()).data.sucursalId);
+          || (isManager() && get(profilePath()).data.sucursalId != null && resource.data.sucursalId == get(profilePath()).data.sucursalId);
       }
       allow get, list: if isMember() && canSee();
       allow create: if isMember()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.sucursalId == get(profilePath()).data.sucursalId;
-      allow update: if isMember() && canSee()
+      allow update: if isMember() && (isAdmin() || resource.data.userId == request.auth.uid)
         && request.resource.data.userId == resource.data.userId
         && request.resource.data.sucursalId == resource.data.sucursalId;
-      allow delete: if isMember() && canSee();
+      allow delete: if isMember() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
     // Un índice de coincidencias sin acceso a los datos de la cartera ajena.
     match /crm_indices/{hash} {
