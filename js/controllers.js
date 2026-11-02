@@ -174,6 +174,7 @@ window.handleAutoSubmit = async (e) => {
             await window.fbUpdate("autos", window.state.editingAutoId, objAuto); 
         } else { 
             objAuto.estado = 'Disponible';
+            objAuto.createdAt = Date.now();
             objAuto.gastos = [];
             objAuto.documentacion = { 
                 c08: false, 
