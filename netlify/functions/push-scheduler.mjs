@@ -8,9 +8,12 @@ const matches = (c,a) => {
   if(c.estadoLead==='Vendido'||a.estado==='Vendido')return false;
   if(c.autoId && c.autoId===a.id)return true;
   const txt=' '+norm([c.marcaInteres,c.notas,...(c.historial||[]).map(h=>h.texto)].join(' '))+' ';
-  const make=norm(a.marca), model=norm(a.modelo);
-  return model.length>=4 && txt.includes(' '+model+' ') &&
-    (make.length>=3 && txt.includes(' '+make+' ') || model.length>=6);
+  const marca=norm(a.marca), modelo=norm(a.modelo);
+  const tokens=modelo.split(' ').filter(t=>t.length>=3 &&
+    !['manual','automatico','sedan','hatchback','full','base'].includes(t));
+  const marcaCoincide=Boolean(marca && txt.includes(' '+marca+' '));
+  const coincidentes=tokens.filter(t=>txt.includes(' '+t+' '));
+  return coincidentes.length>0 && (marcaCoincide || coincidentes.some(t=>t.length>=5));
 };
 const getDb=()=>{
   if(!admin.apps.length){
