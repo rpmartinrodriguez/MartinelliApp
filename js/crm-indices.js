@@ -90,15 +90,18 @@
     const oldRef=oldP.length>=9?await indexRef('telefono',oldP):null;
     const newRef=await indexRef('telefono',newP);
     const nameRef=newName.length>=6?await indexRef('nombre',newName):null;
+    const oldName=cleanName(actual.nombre),oldNameRef=oldName.length>=6?await indexRef('nombre',oldName):null;
     const clientRef=window.doc(window.db,'consultas',id);
     await window.fbRunTransaction(window.db,async tx=>{
       const newIndex=await tx.get(newRef);
       const oldIndex=oldRef && oldRef.path!==newRef.path? await tx.get(oldRef):null;
       const nameIndex=nameRef ? await tx.get(nameRef):null;
+      const oldNameIndex=oldNameRef && oldNameRef.path!==nameRef?.path?await tx.get(oldNameRef):null;
       if(newIndex.exists() && newIndex.data().clienteId!==id)throw Error('El nuevo teléfono pertenece a otra cartera.');
       tx.update(clientRef,data);
       if(!newIndex.exists())tx.set(newRef,{userId:actual.userId,clienteId:id,fecha:new Date().toISOString()});
       if(oldIndex?.exists() && oldIndex.data().clienteId===id)tx.delete(oldRef);
+      if(oldNameIndex?.exists() && oldNameIndex.data().clienteId===id)tx.delete(oldNameRef);
       if(nameRef && !nameIndex.exists())tx.set(nameRef,{userId:actual.userId,clienteId:id,fecha:new Date().toISOString()});
     });
     Object.assign(actual,data); window.reRenderActiveViews?.();
@@ -108,10 +111,13 @@
     if(!actual) return;
     const p=cleanPhone(actual.telefono), idx=p.length>=9?await indexRef('telefono',p):null;
     const clientRef=window.doc(window.db,'consultas',id);
+    const name=cleanName(actual.nombre),nameRef=name.length>=6?await indexRef('nombre',name):null;
     await window.fbRunTransaction(window.db,async tx=>{
       const data=idx?await tx.get(idx):null;
+      const nameData=nameRef?await tx.get(nameRef):null;
       tx.delete(clientRef);
       if(data?.exists() && data.data().clienteId===id)tx.delete(idx);
+      if(nameData?.exists() && nameData.data().clienteId===id)tx.delete(nameRef);
     });
     window.state.consultas=window.state.consultas.filter(c=>c.id!==id);
     window.reRenderActiveViews?.();
