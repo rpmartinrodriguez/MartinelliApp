@@ -802,7 +802,8 @@ window.handleGlobalLeadSubmit = async (e) => {
         }
         
     } catch(err) {
-        console.error("Error guardando lead global:", err);
+        console.error("Error guardando cliente:", err);
+        alert("No se pudo guardar el cliente: " + (err.message || "revisá la conexión."));
     } finally {
         window.state.isSubmittingLead = false;
         
@@ -861,7 +862,8 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
         }
         
     } catch (err) {
-        console.error("Error agregando lead desde detalle auto:", err);
+        console.error("Error guardando cliente del vehículo:", err);
+        alert("No se pudo guardar el cliente: " + (err.message || "revisá la conexión."));
     } finally {
         window.state.isSubmittingDALead = false;
         
