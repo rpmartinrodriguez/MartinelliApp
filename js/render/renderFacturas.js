@@ -11,7 +11,9 @@ window.renderFacturasView = () => {
     const factBC = facturas.filter(f => f.tipoComprobante === 'B' || f.tipoComprobante === 'C');
     const totalIva = factA.reduce((a,c) => a + (Number(c.iva) || 0), 0);
     const totalNetoA = factA.reduce((a,c) => a + (Number(c.valor) || 0) - (Number(c.iva) || 0), 0);
-    const totalBC = factBC.reduce((a,c) => a + (Number(c.valor) || 0), 0); 
+    const totalBC = factBC.reduce((a,c) => a + (Number(c.valor) || 0), 0);
+    const totalB = factBC.filter(f => f.tipoComprobante === 'B').reduce((a,c) => a + (Number(c.valor) || 0), 0);
+    const totalC = factBC.filter(f => f.tipoComprobante === 'C').reduce((a,c) => a + (Number(c.valor) || 0), 0); 
   
   const fs = document.getElementById('facturas-summary');
   if (fs) {
@@ -23,7 +25,7 @@ window.renderFacturasView = () => {
       <div class="p-8 bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
         <p class="text-neutral-500 dark:text-neutral-400 text-sm font-bold uppercase tracking-wider mb-2">IVA contenido en facturas A (21%)</p>
         <p class="text-5xl font-black text-neutral-900 dark:text-white">${window.formatMoney(totalIva)}
-<p class="text-xs mt-3 opacity-70">Neto A: ${window.formatMoney(totalNetoA)} · B/C: ${window.formatMoney(totalBC)} (sin IVA discriminado)</p></p>
+<p class="text-xs mt-3 opacity-70">Neto A: ${window.formatMoney(totalNetoA)} · B: ${window.formatMoney(totalB)} · C: ${window.formatMoney(totalC)} (sin IVA discriminado)</p></p>
       </div>
     `; 
   }
