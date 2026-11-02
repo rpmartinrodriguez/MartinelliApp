@@ -30,6 +30,23 @@
     }
     return null;
   };
+  let checkingClient = 0;
+  window.verificarClienteRemoto = async () => {
+    const step=++checkingClient;
+    const name=document.getElementById('gl-nombre')?.value || '';
+    const phone=document.getElementById('gl-tel')?.value || '';
+    if (!name && !phone) return;
+    try {
+      const result=await window.consultarConflictoCRM(name,phone);
+      if(step!==checkingClient)return;
+      const el=document.getElementById('gl-duplicado-aviso');
+      if(!el)return;
+      const text=result ? (result.kind==='telefono'
+        ? 'Este teléfono ya fue registrado en el CRM' + (result.otro?' por otra cartera.':' en tu cartera.') 
+        : 'Hay un cliente con ese nombre registrado. Comprobá que no sea la misma persona.') : '';
+      el.textContent=text;el.classList.toggle('hidden',!text);
+    }catch(e){ console.warn('No se pudo consultar duplicados:',e); }
+  };
   window.comprobarClienteExistente = async (name, phone, except = null) => {
     const local = matchLocal(cleanName(name),cleanPhone(phone),except);
     const item = local ? {kind:'telefono',otro:local.userId!==member()?.id} :
