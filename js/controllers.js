@@ -45,53 +45,19 @@ window.formatInputMoney = (input) => {
 // --------------------------------------------------------
 
 window.calcularTermometroLead = (lead) => {
-    let score = 50; 
-    
-    if (!lead) return { score: 0, estado: 'Frío' };
-
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const fechaAlta = new Date(lead.fecha || todayStr);
-    
-    const diasAntiguedad = Math.floor((today - fechaAlta) / (1000 * 60 * 60 * 24));
-
-    if (diasAntiguedad <= 3) {
-        score += 20; 
-    } else if (diasAntiguedad <= 7) {
-        score += 10; 
-    } else if (diasAntiguedad > 30) {
-        score -= 20; 
-    }
-
-    if (lead.historial && lead.historial.length > 0) {
-        score += (lead.historial.length * 5); 
-        
-        const completados = lead.historial.filter(h => h.completado);
-        const pendientes = lead.historial.filter(h => !h.completado && h.proximoContacto);
-
-        score += (completados.length * 10);
-
-        pendientes.forEach(p => {
-            if (p.proximoContacto < todayStr) {
-                score -= 15; 
-            } else {
-                score += 15; 
-            }
-        });
-    } else {
-        score -= 15; 
-    }
-
-    score = Math.max(0, Math.min(100, score));
-
-    let estado = 'Frío';
-    if (score >= 70) {
-        estado = 'Caliente';
-    } else if (score >= 40) {
-        estado = 'Tibio';
-    }
-
-    return { score, estado };
+    if (!lead) return { score: 0, estado: 'Frío', diasAntiguedad: 0 };
+    // El estado se determina exclusivamente por la fecha original, no por el
+    // número de llamadas, comentarios ni por la actividad del vendedor.
+    const fecha = String(lead.fecha || '').slice(0, 10);
+    const hoy = new Date();
+    const diaActual = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const parts = /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha.split('-').map(Number) : null;
+    const diaAlta = parts ? Date.UTC(parts[0], parts[1] - 1, parts[2]) : diaActual;
+    const diasAntiguedad = Math.max(0, Math.floor((diaActual - diaAlta) / 86400000));
+    const estado = diasAntiguedad <= 7 ? 'Caliente' : diasAntiguedad <= 15 ? 'Tibio' : 'Frío';
+    // Puntaje visual coherente con la clasificación por edad.
+    const score = estado === 'Caliente' ? 90 : estado === 'Tibio' ? 55 : 20;
+    return { score, estado, diasAntiguedad };
 };
 
 // --------------------------------------------------------
@@ -782,9 +748,9 @@ window.handleGlobalLeadSubmit = async (e) => {
             nombre: document.getElementById('gl-nombre').value,
             telefono: document.getElementById('gl-tel').value,
             marcaInteres: document.getElementById('gl-interes').value,
-            estadoLead: document.getElementById('gl-estado').value,
+            estadoLead: 'Caliente',
             notas: document.getElementById('gl-nota').value,
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: window.fechaLocalHoy(),
             userId: window.state.currentUser.id,
             sucursalId: window.state.currentUser.sucursalId,
             historial: [] 
@@ -839,7 +805,7 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
             nombre: document.getElementById('dac-nombre').value, 
             telefono: document.getElementById('dac-tel').value, 
             notas: document.getElementById('dac-nota').value, 
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: window.fechaLocalHoy(),
             userId: window.state.currentUser.id, 
             sucursalId: window.state.currentUser.sucursalId, 
             historial: []
