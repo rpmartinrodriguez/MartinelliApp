@@ -25,8 +25,16 @@ window.reRenderActiveViews = () => {
 // --- FUNCIONES FIREBASE CRUD ---
 window.fbAdd = async (coleccion, data) => {
     try {
+        if (coleccion === 'autos') {
+            data.createdAt ||= Date.now();
+            data.updatedAt = Date.now();
+        }
         const docRef = await window.addDoc(window.collection(window.db, coleccion), data);
         data.id = docRef.id;
+        if (coleccion === 'autos') {
+            try { await window.registrarNovedadFlota?.('alta', data, null); }
+            catch (err) { console.warn('Vehículo guardado, pero no se pudo guardar la novedad de Flota', err); }
+        }
         
         if(window.state[coleccion]) {
             window.state[coleccion].push(data);
@@ -44,8 +52,14 @@ window.fbAdd = async (coleccion, data) => {
 
 window.fbUpdate = async (coleccion, id, data) => {
     try {
+        const anterior = coleccion === 'autos' ? window.state.autos.find(a=>a.id===id) : null;
+        if (coleccion === 'autos') data.updatedAt = Date.now();
         const docRef = window.doc(window.db, coleccion, id);
         await window.updateDoc(docRef, data);
+        if (coleccion === 'autos') {
+            try { await window.registrarNovedadFlota?.('cambio', {...anterior,...data,id}, anterior); }
+            catch (err) { console.warn('Vehículo actualizado, pero no se pudo registrar la novedad', err); }
+        }
         
         if(window.state[coleccion]) {
             const index = window.state[coleccion].findIndex(item => item.id === id);
@@ -65,8 +79,13 @@ window.fbUpdate = async (coleccion, id, data) => {
 
 window.fbDelete = async (coleccion, id) => {
     try {
+        const anterior = coleccion === 'autos' ? window.state.autos.find(a=>a.id===id) : null;
         const docRef = window.doc(window.db, coleccion, id);
         await window.deleteDoc(docRef);
+        if (coleccion === 'autos') {
+            try { await window.registrarNovedadFlota?.('baja', null, anterior); }
+            catch (err) { console.warn('Vehículo eliminado, pero no se pudo registrar la novedad', err); }
+        }
         
         if(window.state[coleccion]) {
             window.state[coleccion] = window.state[coleccion].filter(item => item.id !== id);
@@ -114,6 +133,8 @@ window.bootApp = async (authUser) => {
         });
         window.initSelects?.();
         window.launchApp?.();
+        // Mostrar cambios de Flota pendientes al iniciar sesión, nunca los de Caja/CRM.
+        window.mostrarNovedadesFlotaAlEntrar?.();
         // Abrir la ficha al tocar una notificación, solo después de autenticar.
         const deepClient = new URLSearchParams(location.search).get("cliente");
         if (deepClient) setTimeout(() => { if (window.state.consultas?.some(c=>c.id===deepClient)) { window.switchTab?.("crm"); window.openDetalleLead?.(deepClient); } }, 550);
