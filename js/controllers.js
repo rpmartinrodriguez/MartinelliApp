@@ -1162,6 +1162,7 @@ window.marcarCobrado = async (id) => {
 window.openModalCaja = () => {
     window.state.editingTransaccionId = null;
     document.getElementById('form-caja').reset();
+    document.getElementById('caja-moneda').value = 'ARS';
     const fecha = document.getElementById('caja-fecha');
     if (fecha) fecha.value = window.fechaLocalHoy();
     window.elegirTipoCaja('ingreso');
@@ -1193,6 +1194,7 @@ window.editTransaccion = (id) => {
     window.state.editingTransaccionId = id;
     
     document.getElementById('caja-fecha').value = t.fecha;
+    document.getElementById('caja-moneda').value = t.moneda === 'USD' ? 'USD' : 'ARS';
     window.elegirTipoCaja(t.tipo);
     document.getElementById('caja-desc').value = t.descripcion;
     document.getElementById('caja-cat').value = t.categoria;
@@ -1337,6 +1339,7 @@ window.handleCajaSubmit = async (e) => {
         const descTx = document.getElementById('caja-desc').value;
         const catTx = document.getElementById('caja-cat').value;
         const montoTx = Number(document.getElementById('caja-monto').value.replace(/[^0-9]/g, ''));
+        const monedaTx = document.getElementById('caja-moneda').value === 'USD' ? 'USD' : 'ARS';
         const fDate = document.getElementById('caja-fecha').value;
 
         const selectedTarget = window.state.currentUser.rol === 'Admin' && !window.state.editingTransaccionId
@@ -1358,6 +1361,7 @@ window.handleCajaSubmit = async (e) => {
             descripcion: descTx, 
             categoria: catTx,
             valor: montoTx,
+            moneda: monedaTx,
             autoId: autoIdSel, 
             tipoComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comprobante').value : 'X',
             numComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comp-num').value : '', 
