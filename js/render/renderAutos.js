@@ -561,13 +561,23 @@ window.renderDetalleAuto = () => {
       <form id="btn-submit-venta" onsubmit="window.handleDAVentaSubmit(event, '${auto.id}')">
         <div class="bg-neutral-50 dark:bg-neutral-800/50 p-6 rounded-[2rem] border border-neutral-200 dark:border-neutral-700 mb-6">
           <h4 class="font-bold mb-4 text-sm uppercase text-neutral-500 tracking-wider">Datos Comprador</h4>
+          <div class="mb-4">
+            <label for="vent-crm-cliente" class="block text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-2">Vincular comprador con cliente del CRM (opcional)</label>
+            <select id="vent-crm-cliente" onchange="window.seleccionarClienteCRMVenta(this.value)" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold text-sm focus:border-green-500">
+              <option value="">No vinculado / comprador nuevo</option>
+              ${leadsPermitidos.filter(c => !window.crmClienteCerrado?.(c) &&
+                (window.state.currentUser.rol==='Admin' || c.userId===window.state.currentUser.id))
+                .map(c=>'<option value="'+c.id+'">'+String(c.nombre||'').replace(/[&<>"]/g,'')+' · '+String(c.telefono||'').replace(/[&<>"]/g,'')+'</option>').join('')}
+            </select>
+            <p class="text-[10px] text-neutral-500 mt-2">Al confirmar la venta se cerrará únicamente el cliente seleccionado, conservando su historial.</p>
+          </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="col-span-2">
                 <datalist id="crm-leads-list">
                     ${leadsPermitidos.filter(c => c.estadoLead !== 'Vendido').map(c => `<option value="${c.nombre}">${c.telefono}</option>`).join('')}
                 </datalist>
-                <input id="vent-comp-nombre" list="crm-leads-list" oninput="window.autoFillComprador(this.value)" required placeholder="Nombre y Apellido" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold focus:border-green-500" />
-                <p class="text-[10px] text-neutral-500 mt-1 font-bold px-1">*Si el cliente está en el CRM, selecciónalo de la lista para vincularlo automáticamente.</p>
+                <input id="vent-comp-nombre" list="crm-leads-list" oninput="window.invalidarVinculoCRMVenta?.(); window.autoFillComprador(this.value)" required placeholder="Nombre y Apellido" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold focus:border-green-500" />
+                <p class="text-[10px] text-neutral-500 mt-1 font-bold px-1">Para vincular la venta al CRM, seleccioná el cliente en el campo superior. Escribir un nombre no vincula automáticamente.</p>
             </div>
             <input id="vent-comp-tel" required placeholder="Teléfono" class="col-span-2 w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold focus:border-green-500" />
             <input id="vent-comp-dni" required placeholder="D.N.I" class="col-span-2 md:col-span-1 w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold focus:border-green-500" />
