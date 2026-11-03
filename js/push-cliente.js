@@ -44,6 +44,38 @@
       alert('¡Notificaciones push activadas para este dispositivo!');
     } catch(err){console.error('Error activando push',err);alert('No se pudieron activar las push: '+(err.message||'revisá los permisos.'));}
   };
+  // Prueba manual, dirigida solo a la suscripción de ESTE dispositivo y usuario.
+  window.probarPushDispositivo = async () => {
+    const btn=document.getElementById('btn-probar-push');
+    if(btn?.disabled)return;
+    if(btn){btn.disabled=true;btn.textContent='Enviando…';}
+    try {
+      if(!window.fbAuth?.currentUser)throw Error('Primero iniciá sesión.');
+      if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window))
+        throw Error('Este navegador no admite Web Push.');
+      if(Notification.permission!=='granted')
+        throw Error('Primero tocá Activar push y permití las notificaciones.');
+      const reg=await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.getSubscription();
+      if(!sub)throw Error('Todavía no hay suscripción activa en este dispositivo. Tocá Activar push.');
+      const subscriptionHash=encode(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(sub.endpoint))).slice(0,32);
+      const token=await window.fbAuth.currentUser.getIdToken();
+      const resp=await fetch('/.netlify/functions/push-test',{
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':'Bearer '+token},
+        body:JSON.stringify({subscriptionHash}),
+        cache:'no-store'
+      });
+      const body=await resp.json().catch(()=>({}));
+      if(!resp.ok || !body.ok)throw Error(body.message||'El servidor no pudo enviar la prueba.');
+      alert('¡Envío aceptado! Revisá las notificaciones del teléfono. Podés cerrar o minimizar la aplicación.');
+    }catch(e){
+      console.error('Push de prueba:',e);
+      alert('No se pudo enviar la prueba: '+(e.message||'Error inesperado.'));
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent='Probar push';}
+    }
+  };
   document.addEventListener('DOMContentLoaded',async()=>{
     if('serviceWorker' in navigator) {
       try { await navigator.serviceWorker.register('/sw.js',{scope:'/'}); }
