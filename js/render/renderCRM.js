@@ -132,8 +132,13 @@ window.renderClientesView = () => {
         if (c.estadoLead === 'Vendido') {
             eClass = 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800';
             tColor = 'text-purple-500';
-            analisis.estado = 'Cerrado';
+            analisis.estado = 'Cerrado · Vendido';
             analisis.score = 100;
+        } else if (c.cierreCRM?.estado === 'Frio') {
+            eClass = 'bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300 border-slate-200 dark:border-slate-700';
+            tColor = 'text-slate-500';
+            analisis.estado = 'Cerrado · Frío';
+            analisis.score = 20;
         } else if (analisis.estado === 'Caliente') {
             eClass = 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200 dark:border-rose-800';
             tColor = 'text-rose-500';
@@ -150,6 +155,8 @@ window.renderClientesView = () => {
         let prox = pendientes.length > 0 ? window.formatDate(pendientes[0].proximoContacto) : 'Sin agendar';
         if (c.estadoLead === 'Vendido') {
             prox = 'Vendido';
+        } else if(c.cierreCRM?.estado === 'Frio'){
+            prox = 'Cerrado sin venta';
         }
 
         tableHtml += `
@@ -213,8 +220,11 @@ window.openDetalleLead = (id) => {
     // Análisis en tiempo real
     let analisis = window.calcularTermometroLead ? window.calcularTermometroLead(lead) : { score: 50, estado: 'Tibio' };
     if (lead.estadoLead === 'Vendido') {
-        analisis.estado = 'Cerrado';
+        analisis.estado = 'Cerrado · Vendido';
         analisis.score = 100;
+    } else if(lead.cierreCRM?.estado === 'Frio'){
+        analisis.estado = 'Cerrado · Frío';
+        analisis.score = 20;
     }
 
     const creador = (window.state.usuarios || []).find(u => u.id === lead.userId);
@@ -271,7 +281,8 @@ window.openDetalleLead = (id) => {
     }
 
     let barColor = 'bg-blue-500';
-    if (analisis.estado === 'Cerrado') barColor = 'bg-purple-500';
+    if (lead.estadoLead === 'Vendido') barColor = 'bg-purple-500';
+    else if(lead.cierreCRM?.estado === 'Frio') barColor = 'bg-slate-500';
     else if (analisis.estado === 'Caliente') barColor = 'bg-rose-500';
     else if (analisis.estado === 'Tibio') barColor = 'bg-amber-500';
 
@@ -294,6 +305,26 @@ window.openDetalleLead = (id) => {
         `;
     }
 
+    const permisoCierre = window.state.currentUser?.rol === 'Admin' ||
+      lead.userId === window.state.currentUser?.id;
+    const accionesCRM = permisoCierre && !window.crmClienteCerrado?.(lead)
+      ? `<div class="mb-5 p-4 bg-neutral-50 dark:bg-neutral-800/40 rounded-xl border border-neutral-200 dark:border-neutral-700">
+          <p class="text-xs text-neutral-500 mb-3">Cuando el cliente no continúe con la operación, podés cerrarlo como Frío sin eliminar el historial. Si concretó una compra, vinculalo desde Cierre de venta en Flota.</p>
+          <button type="button" onclick="window.abrirCierreClienteCRM('${id}')" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-black text-xs">Cerrar cliente sin venta (Frío)</button>
+        </div>`
+      : permisoCierre && lead.cierreCRM?.estado==='Frio'
+        ? `<button type="button" onclick="window.reactivarClienteCRM('${id}')" class="mb-5 rounded-xl px-4 py-2.5 border border-green-500 text-green-700 dark:text-green-400 text-xs font-bold">Reactivar cliente</button>`
+        : '';
+
+    if(lead.cierreCRM?.estado === 'Frio'){
+      panelCerradoInfo = `
+        <div class="mt-6 mb-6 p-5 bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700 rounded-2xl">
+          <p class="font-black text-sm uppercase">Cliente cerrado · Sin venta (Frío)</p>
+          <p class="text-xs mt-2 text-neutral-500">Fecha: ${window.formatDate(lead.cierreCRM.fecha)}.</p>
+          <p class="text-sm mt-2">${String(lead.cierreCRM.motivo||'Sin motivo').replace(/[&<>"]/g,'')}</p>
+        </div>`;
+    }
+
     let html = `
         <div class="mb-4 pb-4 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center">
             <p class="text-xs font-bold text-neutral-500">
@@ -305,6 +336,7 @@ window.openDetalleLead = (id) => {
         </div>
 
         ${panelCerradoInfo}
+        ${accionesCRM}
 
         <div class="mb-6 p-5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-2xl">
             <div class="flex justify-between items-end mb-2">
@@ -368,7 +400,7 @@ window.openDetalleLead = (id) => {
                 <i data-lucide="history" class="w-4 h-4 mr-2"></i> Historial y Seguimiento
             </h4>
             
-            ${lead.estadoLead !== 'Vendido' ? `
+            ${!window.crmClienteCerrado?.(lead) ? `
             <form onsubmit="window.handleAddLeadHistory(event, '${id}')" class="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-200 dark:border-amber-800/50 mb-6 shadow-sm">
                 <textarea id="lh-texto" required rows="2" placeholder="Ej: Lo llamé y ofreció permuta por un Gol..." class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-amber-200 dark:border-amber-700 outline-none resize-none font-bold text-sm mb-4 focus:border-amber-500 transition-colors"></textarea>
                 
@@ -401,7 +433,7 @@ window.openDetalleLead = (id) => {
     } else {
         const histHTML = historial.slice().reverse().map(h => {
             const opacityClass = h.completado ? 'opacity-60' : '';
-            const btnHecho = (!h.completado && lead.estadoLead !== 'Vendido') ? `
+            const btnHecho = (!h.completado && !window.crmClienteCerrado?.(lead)) ? `
                 <button type="button" onclick="window.markHistoryCompleted('${id}', '${h.id}')" class="px-3 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-500 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-green-200 dark:hover:bg-green-800 transition-colors shadow-sm flex items-center">
                     <i data-lucide="check" class="w-3 h-3 mr-1"></i> Hecho
                 </button>
