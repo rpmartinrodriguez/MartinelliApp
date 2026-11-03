@@ -514,10 +514,28 @@
     <div id="modal-detalle-venta" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden fade-in"><div class="bg-white dark:bg-neutral-900 rounded-[2rem] w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl border border-neutral-200 dark:border-neutral-800 slide-up overflow-hidden"><div class="p-6 border-b flex justify-between items-center bg-neutral-50 dark:bg-neutral-950"><h3 class="text-xl font-black uppercase">Operación</h3><button onclick="window.closeModal('modal-detalle-venta')" class="p-2 bg-neutral-200 dark:bg-neutral-800 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button></div><div id="venta-detail-content" class="p-6 overflow-y-auto no-scrollbar flex-1"></div></div></div>
     <div id="modal-detalle-factura" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 hidden fade-in"><div class="bg-white dark:bg-neutral-900 rounded-[2rem] w-full max-w-sm max-h-[85vh] flex flex-col shadow-2xl border border-neutral-200 dark:border-neutral-800 slide-up overflow-hidden"><div class="p-6 border-b flex justify-between items-center bg-neutral-50 dark:bg-neutral-950"><h3 class="text-xl font-black uppercase">Factura</h3><button onclick="window.closeModal('modal-detalle-factura')" class="p-2 bg-neutral-200 dark:bg-neutral-800 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button></div><div id="factura-detail-content" class="p-6 overflow-y-auto no-scrollbar flex-1"></div></div></div>
 
+    <!-- Novedades recientes de Flota, lectura individual por usuario. -->
+    <div id="modal-novedades-flota" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="flota-novedades-titulo">
+      <div class="bg-white dark:bg-neutral-900 rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-neutral-200 dark:border-neutral-700">
+        <div class="px-5 pt-5 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div class="flex items-center justify-between gap-3">
+            <div><h3 id="flota-novedades-titulo" class="font-black text-lg flex gap-2 items-center"><i data-lucide="car-front" class="w-5 h-5 text-green-600"></i> Novedades de Flota</h3><p id="flota-novedades-count" class="text-xs font-medium text-neutral-500 mt-1"></p></div>
+            <button type="button" onclick="window.cerrarNovedadesFlota()" class="p-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg" aria-label="Cerrar novedades"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <p class="text-xs text-neutral-500 mt-3">Estos son los cambios de vehículos que ocurrieron desde tu última lectura.</p>
+        </div>
+        <div id="flota-novedades-list" class="overflow-y-auto flex-1 min-h-0"></div>
+        <div class="grid grid-cols-2 gap-3 p-4 border-t border-neutral-100 dark:border-neutral-800">
+          <button type="button" onclick="window.cerrarNovedadesFlota(false)" class="rounded-xl py-3 px-4 bg-neutral-100 dark:bg-neutral-800 font-bold text-sm">Entendido, cerrar</button>
+          <button type="button" onclick="window.cerrarNovedadesFlota(true)" class="rounded-xl py-3 px-4 bg-green-600 text-white font-bold text-sm">Ver Flota</button>
+        </div>
+      </div>
+    </div>
+
     <script>window.firebaseReady = new Promise(resolve => { window.finishFirebaseSetup = resolve; });</script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, getDocsFromServer, onSnapshot, query, where, getDoc, setDoc, updateDoc, deleteDoc, doc, runTransaction, Timestamp, GeoPoint, Bytes, DocumentReference } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, getDocsFromServer, onSnapshot, query, where, orderBy, limit, getDoc, setDoc, updateDoc, deleteDoc, doc, runTransaction, Timestamp, GeoPoint, Bytes, DocumentReference } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, setPersistence, inMemoryPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         
         const firebaseConfig = {
@@ -539,6 +557,8 @@
         window.fbGetDocsFromServer = getDocsFromServer;
         window.fbQuery = query;
         window.fbWhere = where;
+        window.fbOrderBy = orderBy;
+        window.fbLimit = limit;
         window.fbOnSnapshot = onSnapshot;
         window.fbGetDoc = getDoc;
         window.fbSetDoc = setDoc;
@@ -595,6 +615,7 @@
     <script src="js/recovery.js"></script>
     <script src="js/solicitudes-2026.js"></script>
     <script src="js/crm-indices.js"></script>
+    <script src="js/flota-novedades.js"></script>
     <script src="js/push-cliente.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
