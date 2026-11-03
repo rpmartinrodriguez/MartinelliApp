@@ -22,7 +22,22 @@
       descripcion = 'Se actualizó el precio de ' + tituloAuto(nuevo);
     else descripcion = 'Se modificó la ficha de ' + tituloAuto(nuevo);
     const data = {accion,descripcion,fechaMs:Date.now(),usuarioId:usuario.id,vehiculoId:nuevo?.id||anterior?.id||''};
-    await window.addDoc(window.collection(window.db,'flota_novedades'),data);
+    const docRef = await window.addDoc(window.collection(window.db,'flota_novedades'),data);
+    // Enviar push inmediatamente a TODOS los usuarios con dispositivos activos.
+    // Si falla la llamada, la tarea programada recupera el evento guardado.
+    try {
+      const token=await window.fbAuth.currentUser.getIdToken();
+      const response=await fetch('/.netlify/functions/push-flota',{
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':'Bearer '+token},
+        body:JSON.stringify({eventoId:docRef.id}),
+        cache:'no-store'
+      });
+      if(!response.ok)console.warn('Push Flota pendiente de reintento:',response.status);
+    } catch(e) {
+      console.warn('Notificación inmediata no disponible; reintentará Netlify:',e);
+    }
+    return docRef.id;
   };
 
   window.mostrarNovedadesFlotaAlEntrar = async () => {
