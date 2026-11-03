@@ -116,7 +116,7 @@
   };
   // Solo coincidencias útiles: modelo completo o marca y modelo presentes.
   window.coincidenciasClientesFlota = (cliente, autos = window.state?.autos || []) => {
-    if (!cliente || cliente.estadoLead === 'Vendido') return [];
+    if (!cliente || window.crmClienteCerrado?.(cliente) || cliente.estadoLead === 'Vendido') return [];
     const texto = ' ' + normalizar([cliente.marcaInteres,cliente.notas,
       ...(cliente.historial || []).map(h => h.texto)].join(' ')) + ' ';
     return autos.filter(auto => {

@@ -133,6 +133,8 @@ window.bootApp = async (authUser) => {
         });
         window.initSelects?.();
         window.launchApp?.();
+        // Lecturas de campanita por usuario, con sincronización al ingresar.
+        window.cargarNotificacionesVistas?.();
         if (new URLSearchParams(location.search).get('seccion') === 'flota') {
             window.switchTab?.('flota');
         }

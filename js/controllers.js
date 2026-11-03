@@ -462,6 +462,20 @@ window.handleDAVentaSubmit = async (e, autoId) => {
         const telComprador = document.getElementById('vent-comp-tel')?.value || '';
         const dniComprador = document.getElementById('vent-comp-dni')?.value || '';
         const domComprador = document.getElementById('vent-comp-domicilio')?.value || '';
+        const clienteCrmId = document.getElementById('vent-crm-cliente')?.value || '';
+        const clienteCRM = clienteCrmId ? (window.state.consultas||[]).find(c=>c.id===clienteCrmId) : null;
+        if(clienteCrmId && !clienteCRM)throw new Error('El cliente seleccionado ya no está disponible en el CRM.');
+        if(clienteCRM && window.state.currentUser.rol!=='Admin' && clienteCRM.userId!==window.state.currentUser.id)
+            throw new Error('Para asociar una venta solo podés seleccionar un cliente de tu propia cartera.');
+        // No cerrar la ficha equivocada: ambos datos deben corresponder al cliente seleccionado.
+        if(clienteCRM && (
+            String(clienteCRM.nombre||'').trim().toLocaleLowerCase('es') !==
+                nombreComprador.trim().toLocaleLowerCase('es') ||
+            window.normalizarTelefonoCRM?.(clienteCRM.telefono) !==
+                window.normalizarTelefonoCRM?.(telComprador)
+        )) {
+            throw new Error('El nombre o teléfono del comprador no coincide con el cliente seleccionado del CRM. Revisá la vinculación.');
+        }
 
         const vEfectivo = document.getElementById('chk-efectivo')?.checked ? Number(document.getElementById('val-efectivo').value.replace(/[^0-9]/g, '')) : 0;
         const notaEfectivo = document.getElementById('nota-efectivo')?.value || 'Efectivo';
@@ -525,8 +539,9 @@ window.handleDAVentaSubmit = async (e, autoId) => {
         if (vPermuta > 0) metodosUsados.push('Permuta');
         
         // --- HISTORIAL VENTAS ---
-        await window.fbAdd("ventas", {
-            fecha: fDate, autoDesc: `${auto.marca} ${auto.modelo} (${auto.patente})`, 
+        const ventaRef = await window.fbAdd("ventas", {
+            fecha: fDate, autoDesc: `${auto.marca} ${auto.modelo} (${auto.patente})`,
+            autoId, clienteCrmId: clienteCrmId || null,
             precioListaOriginal: auto.precio, montoTotal: totalVentaOperacion, 
             desglose: { efectivo: vEfectivo, transferencia: vTransferencia, credito: vCredito, pagare: vPagare, permuta: vPermuta },
             compradorNombre: nombreComprador, compradorTelefono: telComprador, compradorDNI: dniComprador, compradorDomicilio: domComprador,
@@ -552,20 +567,20 @@ window.handleDAVentaSubmit = async (e, autoId) => {
         
         await window.fbUpdate("autos", autoId, { estado: 'Vendido' }); 
         
-        // --- CIERRE CRM ---
-        try {
-            const leadMatch = (window.state.consultas || []).find(c => c.nombre.trim().toLowerCase() === nombreComprador.trim().toLowerCase());
-            if (leadMatch && leadMatch.estadoLead !== 'Vendido') {
-                await window.fbUpdate("consultas", leadMatch.id, { estadoLead: 'Vendido' });
-                const nuevoHistorial = { 
-                    id: window.generateId ? window.generateId() : Date.now().toString(), 
-                    fechaCarga: fDate, texto: `¡OPERACIÓN CONCRETADA EN SALÓN! Vehículo vendido.`, proximoContacto: null, completado: true 
-                };
-                const listHistorial = [...(leadMatch.historial || []), nuevoHistorial];
-                await window.fbUpdate("consultas", leadMatch.id, { historial: listHistorial });
+        // --- CIERRE CRM VINCULADO ---
+        // La venta ya existe: cerrar solo al comprador seleccionado por ID.
+        // No cerrar a todos los interesados en este auto ni buscar por nombre.
+        if(clienteCRM) {
+            try {
+                await window.cerrarClienteCRM({
+                    clienteId:clienteCRM.id,estado:'Vendido',autoId,
+                    ventaId:ventaRef.id,fuente:'venta-flota',
+                    motivo:`Compra de ${auto.marca} ${auto.modelo} (${auto.patente||''})`
+                });
+            }catch(crmErr) {
+                console.error('Venta guardada; falló el cierre del cliente CRM:',crmErr);
+                alert('La venta quedó registrada, pero no se pudo cerrar la ficha del CRM. Revisá la venta y completá el vínculo desde administración.');
             }
-        } catch(crmErr) {
-            console.error("Error CRM:", crmErr);
         }
 
         // =========================================================
