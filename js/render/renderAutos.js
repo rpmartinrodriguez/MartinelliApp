@@ -562,6 +562,16 @@ window.renderDetalleAuto = () => {
         <div class="bg-neutral-50 dark:bg-neutral-800/50 p-6 rounded-[2rem] border border-neutral-200 dark:border-neutral-700 mb-6">
           <h4 class="font-bold mb-4 text-sm uppercase text-neutral-500 tracking-wider">Datos Comprador</h4>
           <div class="mb-4">
+            <label for="vent-crm-lead-id" class="block text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300 mb-2">Vincular esta venta con un cliente del CRM (opcional)</label>
+            <select id="vent-crm-lead-id" onchange="window.seleccionarCompradorCRM(this.value)"
+              class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-indigo-200 dark:border-indigo-800 font-bold text-sm">
+              <option value="">Venta sin cliente del CRM vinculado</option>
+              ${leadsPermitidos.filter(c => (window.state.currentUser.rol === 'Admin' || c.userId === window.state.currentUser.id)
+                && c.estadoLead !== 'Vendido').map(c => `<option value="${c.id}">${window.escaparTextoCRM(c.nombre)} · ${window.escaparTextoCRM(c.telefono||'Sin teléfono')}${c.estadoLead === 'Cerrado' ? ' · Frío (archivado)' : ''}</option>`).join('')}
+            </select>
+            <p class="text-[10px] text-neutral-500 mt-1">Seleccioná el cliente para cerrar su gestión automáticamente como Vendido. Se vincula por ID, no por coincidencia de nombre.</p>
+          </div>
+          <div class="mb-4">
             <label for="vent-crm-cliente" class="block text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-2">Vincular comprador con cliente del CRM (opcional)</label>
             <select id="vent-crm-cliente" onchange="window.seleccionarClienteCRMVenta(this.value)" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold text-sm focus:border-green-500">
               <option value="">No vinculado / comprador nuevo</option>
@@ -574,7 +584,7 @@ window.renderDetalleAuto = () => {
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="col-span-2">
                 <datalist id="crm-leads-list">
-                    ${leadsPermitidos.filter(c => c.estadoLead !== 'Vendido').map(c => `<option value="${c.nombre}">${c.telefono}</option>`).join('')}
+                    ${leadsPermitidos.filter(c => c.estadoLead !== 'Vendido').map(c => `<option value="${window.escaparTextoCRM(c.nombre)}">${window.escaparTextoCRM(c.telefono)}</option>`).join('')}
                 </datalist>
                 <input id="vent-comp-nombre" list="crm-leads-list" oninput="window.invalidarVinculoCRMVenta?.(); window.autoFillComprador(this.value)" required placeholder="Nombre y Apellido" class="w-full rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 outline-none font-bold focus:border-green-500" />
                 <p class="text-[10px] text-neutral-500 mt-1 font-bold px-1">Para vincular la venta al CRM, seleccioná el cliente en el campo superior. Escribir un nombre no vincula automáticamente.</p>
@@ -665,13 +675,21 @@ window.renderDetalleAuto = () => {
   if(window.lucide) window.lucide.createIcons();
 };
 
-window.autoFillComprador = (nombreSeleccionado) => {
-    const lead = (window.state.consultas || []).find(c => c.nombre === nombreSeleccionado);
-    if (lead) {
-        const telInput = document.getElementById('vent-comp-tel');
-        if (telInput && !telInput.value) {
-            telInput.value = lead.telefono || '';
-        }
+window.seleccionarCompradorCRM = id => {
+    const lead = (window.state.consultas || []).find(c => c.id === id);
+    if (!lead) return;
+    const nombre = document.getElementById('vent-comp-nombre');
+    const telefono = document.getElementById('vent-comp-tel');
+    if (nombre) nombre.value = lead.nombre || '';
+    if (telefono) telefono.value = lead.telefono || '';
+};
+
+// Elegir un nombre del datalist no establece identidad: nunca cerrar un homónimo.
+window.autoFillComprador = nombre => {
+    const seleccionado = document.getElementById('vent-crm-lead-id');
+    if (seleccionado?.value) {
+        const lead = (window.state.consultas || []).find(c => c.id === seleccionado.value);
+        if (lead && nombre !== lead.nombre) seleccionado.value = '';
     }
 };
 
