@@ -129,6 +129,25 @@
       return modelos.length > 0 && (hayMarca || modelos.some(t => t.length >= 5));
     });
   };
+  window.elegirTipoCaja = (tipo) => {
+    const gasto = tipo === 'gasto';
+    const input = document.getElementById('caja-tipo');
+    if (input) input.value = gasto ? 'gasto' : 'ingreso';
+    const modal = document.getElementById('modal-caja');
+    if (modal) modal.dataset.tipo = gasto ? 'gasto' : 'ingreso';
+    const radios = document.querySelectorAll('input[name="caja-tipo-visual"]');
+    radios.forEach(radio => { radio.checked = radio.value === (gasto ? 'gasto' : 'ingreso'); });
+    for (const [id,active,color] of [
+      ['caja-label-ingreso',!gasto,'green'],
+      ['caja-label-gasto',gasto,'red']
+    ]) {
+      const el=document.getElementById(id);
+      if(!el)continue;
+      el.style.borderColor=active ? (color==='green'?'#16a34a':'#dc2626'):'#d4d4d8';
+      el.style.backgroundColor=active ? (color==='green'?'#dcfce7':'#fee2e2'):'transparent';
+      el.style.color=active ? (color==='green'?'#166534':'#991b1b'):'';
+    }
+  };
   window.actualizarFacturaCaja = () => {
     const activo = !!$('caja-facturada')?.checked, tipo = $('caja-comprobante');
     $('caja-factura-campos')?.classList.toggle('hidden', !activo);
