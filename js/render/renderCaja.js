@@ -263,8 +263,7 @@ window.renderCajaView = () => {
             </p>
             ${admin ? `<div class="mt-4 pt-3 border-t border-white/20 dark:border-black/20 relative z-10"><p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Saldo U$S · solo administración</p><p class="text-xl font-black">${montoMoneda(saldoUSD, "USD")}</p></div>` : ""}
             <p class="text-[10px] relative z-10 mt-2 opacity-70">Saldo principal en pesos ($)</p>
-            <p class="hidden">
-            </p>
+
         </div>
     `;
 
