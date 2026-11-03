@@ -8,6 +8,7 @@
   let lecturaRef = null;
   let abierta = false;
   let consultando = false;
+  let ultimaConsulta = 0;
 
   window.registrarNovedadFlota = async (accion, nuevo, anterior) => {
     const usuario = window.state?.currentUser;
@@ -28,6 +29,7 @@
     const usuario = window.state?.currentUser;
     if(!usuario || consultando || abierta)return;
     consultando = true;
+    ultimaConsulta = Date.now();
     try {
       lecturaRef = window.doc(window.db,'flota_lecturas',usuario.id);
       const ultima = await window.fbGetDoc(lecturaRef);
@@ -80,4 +82,10 @@
       console.warn('No se pudo marcar Flota como leída: se mostrará nuevamente.',e);
     }
   };
+  // Si el usuario vuelve a la PWA tras usar otras aplicaciones, revisar novedades
+  // sin mostrar nada ya marcado como leído.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !window.state?.currentUser || Date.now() - ultimaConsulta < 30000)return;
+    window.mostrarNovedadesFlotaAlEntrar();
+  });
 })();
