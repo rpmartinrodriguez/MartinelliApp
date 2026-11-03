@@ -133,6 +133,9 @@ window.bootApp = async (authUser) => {
         });
         window.initSelects?.();
         window.launchApp?.();
+        if (new URLSearchParams(location.search).get('seccion') === 'flota') {
+            window.switchTab?.('flota');
+        }
         // Mostrar cambios de Flota pendientes al iniciar sesión, nunca los de Caja/CRM.
         window.mostrarNovedadesFlotaAlEntrar?.();
         // Abrir la ficha al tocar una notificación, solo después de autenticar.
