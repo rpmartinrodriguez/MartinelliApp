@@ -69,7 +69,8 @@
             titulo:'Contactar a '+(lead.nombre||'cliente'),
             texto:h.texto||'Seguimiento pendiente',
             detalle:h.proximoContacto<today?'Atrasado desde '+h.proximoContacto:'Para hoy',
-            leadId:lead.id,historialId:h.id,orden:'0'+h.proximoContacto
+            leadId:lead.id,historialId:h.id,orden:'0'+h.proximoContacto,
+            puedeRealizar:usuario.rol==='Admin'||lead.userId===usuario.id
           });
         }
       }
@@ -136,7 +137,7 @@
         +'class="rounded-lg px-2 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300" '
         +'title="Marcar notificación como vista" aria-label="Marcar notificación como vista">'
         +'<i data-lucide="check" class="w-4 h-4"></i></button>'
-        +(x.tipo==='seguimiento'
+        +(x.tipo==='seguimiento' && x.puedeRealizar
           ? '<button type="button" data-notif-action="realizada" data-notif-id="'+id+'" '
             +'class="rounded-lg px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-[10px] font-bold" '
             +'title="Marcar el seguimiento como realizado en CRM">Realizado</button>'
@@ -222,7 +223,7 @@
 
   window.realizarSeguimientoNotificacion=async id=>{
     const item=pendientes.get(id);
-    if(!item || item.tipo!=='seguimiento')return;
+    if(!item || item.tipo!=='seguimiento' || !item.puedeRealizar)return;
     try {
       // No se confunde "visto" con "realizado": esta acción actualiza el CRM.
       await window.markHistoryCompleted(item.leadId,item.historialId);
