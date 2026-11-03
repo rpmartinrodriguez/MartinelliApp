@@ -189,6 +189,16 @@
         localStorage.setItem('martinelli_notifs_'+uid,JSON.stringify([...vistas].slice(-MAX_VISTAS)));
       }
       window.updateNotifications();
+      // Sincronizar las palomitas si este usuario abrió la app en más de un equipo.
+      window.notificacionesLecturaUnsub?.();
+      window.notificacionesLecturaUnsub=window.fbOnSnapshot(ref,snapshot=>{
+        if(validarSesion()!==uid)return;
+        if(snapshot.exists() && Array.isArray(snapshot.data().ids)){
+          vistas=new Set([...vistas,...snapshot.data().ids]);
+          localStorage.setItem('martinelli_notifs_'+uid,JSON.stringify([...vistas].slice(-MAX_VISTAS)));
+          window.updateNotifications();
+        }
+      },error=>console.warn('No se pudo sincronizar la lectura de notificaciones:',error));
     }catch(error){
       console.warn('No se pudieron cargar los vistos de notificaciones:',error);
     }finally{cargando=false;}
