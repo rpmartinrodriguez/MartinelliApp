@@ -51,7 +51,7 @@ export default async () => {
   const clientes=leadsSnap.docs.map(d=>({id:d.id,...d.data()}));
   const events=[];
   for(const c of clientes){
-    if(!c.userId)continue;
+    if(!c.userId || c.estadoLead==='Vendido' || c.cierreCRM?.estado==='Frio')continue;
     for(const a of autos)if(matches(c,a))
       events.push({userId:c.userId,key:'stock:'+c.id+':'+a.id,title:'Vehículo disponible',
         body:'Un '+a.marca+' '+a.modelo+' coincide con el interés de '+c.nombre+'.',url:'/?cliente='+encodeURIComponent(c.id)});
