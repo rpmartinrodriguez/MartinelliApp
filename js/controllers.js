@@ -351,7 +351,7 @@ window.abrirCajaParaGastos = () => {
     
     setTimeout(() => { 
         document.getElementById('caja-auto').value = window.state.pendingIngresoAutoId; 
-        document.getElementById('caja-tipo').value = 'gasto'; 
+        window.elegirTipoCaja('gasto'); 
     }, 500); 
 };
 
@@ -1162,6 +1162,9 @@ window.marcarCobrado = async (id) => {
 window.openModalCaja = () => {
     window.state.editingTransaccionId = null;
     document.getElementById('form-caja').reset();
+    const fecha = document.getElementById('caja-fecha');
+    if (fecha) fecha.value = window.fechaLocalHoy();
+    window.elegirTipoCaja('ingreso');
     window.actualizarFacturaCaja();
     const currentUser = window.state.currentUser;
     const selectedId = currentUser.rol === 'Admin'
@@ -1190,7 +1193,7 @@ window.editTransaccion = (id) => {
     window.state.editingTransaccionId = id;
     
     document.getElementById('caja-fecha').value = t.fecha;
-    document.getElementById('caja-tipo').value = t.tipo;
+    window.elegirTipoCaja(t.tipo);
     document.getElementById('caja-desc').value = t.descripcion;
     document.getElementById('caja-cat').value = t.categoria;
     document.getElementById('caja-monto').value = window.formatMoney(t.valor).replace(/[^0-9]/g, '');
