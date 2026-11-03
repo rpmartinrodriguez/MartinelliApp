@@ -32,9 +32,22 @@
     }
   };
   window.instagramLinkAuto = auto => {
-    let url;
-    try { url = window.validarInstagramUrl(auto?.instagramUrl); } catch (_) { return ''; }
-    return url ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center justify-center p-1.5 text-pink-600 hover:text-pink-500 bg-white/90 dark:bg-neutral-800 rounded-lg" title="Ver publicación en Instagram"><i data-lucide="instagram" class="w-4 h-4"></i></a>' : '';
+    let url = '';
+    try { url = window.validarInstagramUrl(auto?.instagramUrl || auto?.linkInstagram || ''); } catch (_) { return ''; }
+    if (!url) return '';
+    // SVG fijo: no depende de Lucide ni de los estilos de la tarjeta/modal.
+    return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" '
+      + 'style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;'
+      + 'background:#fff;color:#111;border:1px solid #d4d4d8;border-radius:10px;flex-shrink:0" '
+      + 'title="Ver publicación de Instagram" aria-label="Abrir publicación de Instagram">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" '
+      + 'fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" '
+      + 'aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/>'
+      + '<circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#111" stroke="none"/></svg></a>';
+  };
+  window.fechaLocalHoy = () => {
+    const d = new Date();
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   };
   window.abrirFormularioCliente = (autoId = '') => {
     const form = $('form-cliente-unificado');
