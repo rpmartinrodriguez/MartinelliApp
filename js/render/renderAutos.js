@@ -123,7 +123,7 @@ window.renderAutosView = () => {
         <div onclick="window.openDetalleAuto('${auto.id}')" class="group cursor-pointer bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] p-2 shadow-sm hover:shadow-lg transition-all hover:border-green-500/50 relative overflow-hidden">
           <div class="bg-neutral-50/50 dark:bg-neutral-800/50 rounded-[2rem] p-6 h-full flex flex-col relative">
             ${badgeInteresados}
-            <div class="absolute top-2 right-2 z-20">${window.instagramLinkAuto?.(auto)}</div>
+            <div class="absolute top-2 right-2 z-30">${window.instagramLinkAuto?.(auto)}</div>
             <div class="flex justify-between items-start mb-4">
               <div class="flex flex-col space-y-1 mt-1">
                 <div class="flex items-center space-x-2">
