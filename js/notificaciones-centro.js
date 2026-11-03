@@ -61,7 +61,7 @@
     const resultado=[];
     const today=hoyLocal();
     for(const lead of leadsVisibles()){
-      if(lead.estadoLead==='Vendido')continue;
+      if(window.crmClienteCerrado?.(lead))continue;
       for(const h of lead.historial||[]){
         if(!h.completado && h.proximoContacto && h.proximoContacto<=today){
           resultado.push({
