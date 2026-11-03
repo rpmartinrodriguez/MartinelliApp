@@ -62,3 +62,7 @@ Al pasar a producción, en **Configuración / Usuarios → Indexar clientes ante
 - Push: suscripción iPhone PWA y Android, función programada y recepción con app cerrada.
 
 Referencia oficial: [Web Push en iOS (Apple)](https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers) y [Scheduled Functions (Netlify)](https://docs.netlify.com/build/functions/scheduled-functions/).
+
+## Redespliegue de prueba solicitado el 3 de noviembre de 2026
+
+Se solicitó un nuevo build de la rama de prueba para que Netlify vuelva a cargar la configuración de variables de entorno asociadas al contexto **Deploy Previews**. Este commit solo documenta la operación y no modifica claves, `main` ni datos de producción. La función `push-public-key` puede confirmar las variables cuando el nuevo deploy termine; si devuelve `publicKey: ""`, corregir `VAPID_PUBLIC_KEY` en Netlify (scope **Functions**, contexto **Deploy Previews**).
