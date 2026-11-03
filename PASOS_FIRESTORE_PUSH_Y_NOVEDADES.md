@@ -66,3 +66,7 @@ Referencia oficial: [Web Push en iOS (Apple)](https://developer.apple.com/docume
 ## Redespliegue de prueba solicitado el 3 de noviembre de 2026
 
 Se solicitó un nuevo build de la rama de prueba para que Netlify vuelva a cargar la configuración de variables de entorno asociadas al contexto **Deploy Previews**. Este commit solo documenta la operación y no modifica claves, `main` ni datos de producción. La función `push-public-key` puede confirmar las variables cuando el nuevo deploy termine; si devuelve `publicKey: ""`, corregir `VAPID_PUBLIC_KEY` en Netlify (scope **Functions**, contexto **Deploy Previews**).
+
+## Nuevo despliegue solicitado para corregir VAPID_SUBJECT
+
+**3 de noviembre de 2026**: reconstruir Deploy Preview #1 después de corregir `VAPID_SUBJECT` en las variables de entorno de Netlify. Valor esperado: `mailto:correo-real@dominio.com`. Este cambio documental fuerza una nueva compilación de la rama de prueba; no modifica código de la app, secretos, reglas Firestore ni la rama `main`.
