@@ -10,15 +10,23 @@
 - **Flota**: historial de nuevos vehículos, cambios de ficha/estado/precio y eliminaciones. Al entrar o regresar a la PWA aparecen en una ventana flotante, **solo cambios de Flota**; «Entendido, cerrar» o «Ver Flota». La fecha de última lectura se guarda por UID en Firestore.
 - **Push**: botón «Activar push» dentro de Notificaciones. Se requiere configurar el servidor antes de que aparezca habilitado; envío periódico de coincidencias y seguimientos.
 
-## IMPORTANTE: coordinar reglas y código
+## IMPORTANTE: dos etapas de reglas para no interrumpir main
 
-La **versión principal actual** de Martinelli consulta todas las fichas de CRM al iniciar. Las reglas nuevas restringen esas consultas por vendedor. **Si publicás las reglas nuevas sin actualizar el código de main, el inicio de sesión de vendedores y encargados podría fallar**.
+La versión principal actual lee todas las fichas del CRM al iniciar; la nueva restringe esta consulta por rol. Las reglas finales, por tanto, **no son compatibles con los usuarios vendedores/encargados de la versión principal antigua**.
 
-Antes de publicarlas:
-1. [Abrir las reglas completas de esta rama](https://github.com/rpmartinrodriguez/MartinelliApp/blob/mejoras-crm-flota-facturacion-push-2026-11/firestore.rules).
-2. Probar la versión de prueba en un **proyecto Firebase de ensayo separado**, o coordinar la publicación de las reglas con la actualización del código en `main` y la validación de roles.
-3. Verificar acceso de Admin/Encargado/Vendedor y lectura/escritura de CRM, Caja, Flota y notificaciones.
-4. Solo cuando esté comprobado: ir a [Firebase Console](https://console.firebase.google.com/) → proyecto `martinelliapp-40269` → Firestore Database → Rules, pegar **todo el archivo** y publicar. **No reemplazar solo fragmentos ni mezclar reglas viejas y nuevas sin revisar.**
+**Etapa 1 — Para probar sin cambiar el código de main:**
+1. En [Firebase Console](https://console.firebase.google.com/) → proyecto `martinelliapp-40269` → **Firestore Database → Rules**, guardá una copia de las reglas vigentes.
+2. Abrí el archivo [firestore-preview-compatible.rules](https://github.com/rpmartinrodriguez/MartinelliApp/blob/mejoras-crm-flota-facturacion-push-2026-11/firestore-preview-compatible.rules), copiá todo el contenido y probalo en el simulador de reglas.
+3. Si lo validaste, publicalo. Mantiene la lectura de CRM compatible con `main` y permite probar el recuadro de Flota y las suscripciones push.
+4. **Advertencia:** en esta etapa las carteras no están aisladas en el servidor; el frontend de prueba filtra por usuario, pero un acceso directo a Firebase seguiría pudiendo leer otras carteras. No considerar la privacidad completa hasta la etapa 2.
+
+**Etapa 2 — Al publicar definitivamente el nuevo frontend:**
+1. Probar en un proyecto Firebase separado, con Admin, Encargado y dos Vendedores, lectura y escritura de CRM y demás módulos.
+2. Abrir [firestore.rules, versión definitiva](https://github.com/rpmartinrodriguez/MartinelliApp/blob/mejoras-crm-flota-facturacion-push-2026-11/firestore.rules).
+3. Coordinar el reemplazo de las reglas con el despliegue de esta rama a `main`; no dejarlas definitivas mientras haya usuarios corriendo el frontend viejo (incluidas PWA que aún no actualizaron).
+4. Verificar acceso y lecturas en los tres roles; mantener respaldo de las reglas previas y poder volver a ellas si surge un problema.
+
+**No copies fragmentos aislados:** usá el archivo completo de la etapa que estés activando.
 
 Colecciones nuevas:
 - `crm_indices`: índices para localizar teléfono/nombre repetido sin ver fichas ajenas.
