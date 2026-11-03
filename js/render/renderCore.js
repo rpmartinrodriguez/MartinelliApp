@@ -63,7 +63,8 @@ window.initSelects = () => {
 window.checkNotifications = () => {
   if(!window.state.currentUser || window.state.currentUser.rol !== 'Admin') {
     const nc = document.getElementById('notif-container');
-    if (nc) nc.classList.add('hidden');
+    // La campanita con alertas del CRM y push también corresponde a Vendedores/Encargados.
+    if (nc) nc.classList.toggle('hidden', !window.state.currentUser);
     return;
   }
   
