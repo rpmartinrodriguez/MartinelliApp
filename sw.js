@@ -1,5 +1,5 @@
 /* Martinelli Autos - cache v3: actualiza HTML y scripts antes de servir el cache. */
-const CACHE_NAME = "martinelli-auto-cache-v4";
+const CACHE_NAME = "martinelli-auto-cache-v5";
 const ASSETS = ["./","./index.html","./icon.png","./manifest.json","./js/backup.js","./js/recovery.js"];
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
@@ -38,7 +38,7 @@ self.addEventListener('push', event => {
   let data={title:'Martinelli Autos',body:'Tenés una notificación.',url:'/'};
   try {if(event.data)data={...data,...event.data.json()};}catch(_){}
   event.waitUntil(self.registration.showNotification(data.title,{
-    body:data.body,icon:'./icon.png',badge:'./icon.png',tag:'martinelli-'+(data.url||'inicio'),
+    body:data.body,icon:'./icon.png',badge:'./icon.png',tag:data.tag||'martinelli-'+(data.url||'inicio'),
     data:{url:data.url||'/'}
   }));
 });
