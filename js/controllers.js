@@ -467,10 +467,14 @@ window.handleDAVentaSubmit = async (e, autoId) => {
         if(clienteCrmId && !clienteCRM)throw new Error('El cliente seleccionado ya no está disponible en el CRM.');
         if(clienteCRM && window.state.currentUser.rol!=='Admin' && clienteCRM.userId!==window.state.currentUser.id)
             throw new Error('Para asociar una venta solo podés seleccionar un cliente de tu propia cartera.');
-        if(clienteCRM && String(clienteCRM.nombre||'').trim().toLocaleLowerCase('es')!==
-                nombreComprador.trim().toLocaleLowerCase('es') &&
-           window.normalizarTelefonoCRM?.(clienteCRM.telefono)!==window.normalizarTelefonoCRM?.(telComprador)) {
-            throw new Error('El nombre y teléfono del comprador no coinciden con el cliente seleccionado del CRM. Revisá la vinculación.');
+        // No cerrar la ficha equivocada: ambos datos deben corresponder al cliente seleccionado.
+        if(clienteCRM && (
+            String(clienteCRM.nombre||'').trim().toLocaleLowerCase('es') !==
+                nombreComprador.trim().toLocaleLowerCase('es') ||
+            window.normalizarTelefonoCRM?.(clienteCRM.telefono) !==
+                window.normalizarTelefonoCRM?.(telComprador)
+        )) {
+            throw new Error('El nombre o teléfono del comprador no coincide con el cliente seleccionado del CRM. Revisá la vinculación.');
         }
 
         const vEfectivo = document.getElementById('chk-efectivo')?.checked ? Number(document.getElementById('val-efectivo').value.replace(/[^0-9]/g, '')) : 0;
