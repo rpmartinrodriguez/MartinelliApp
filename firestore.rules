@@ -130,6 +130,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Cada empleado puede marcar como vistos sus propios avisos de la campanita.
+    // Se guardan identificadores, no datos personales del cliente.
+    match /notificaciones_vistas/{uid} {
+      allow get: if isMember() && uid == request.auth.uid;
+      allow list: if false;
+      allow create, update: if isMember() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ids', 'actualizadoMs'])
+        && request.resource.data.keys().hasAll(['ids', 'actualizadoMs'])
+        && request.resource.data.ids is list
+        && request.resource.data.ids.size() <= 300
+        && request.resource.data.actualizadoMs is number;
+      allow delete: if false;
+    }
+
     // Todo dato fuera de las colecciones conocidas queda denegado.
     match /{document=**} {
       allow read, write: if false;
