@@ -26,7 +26,15 @@ export async function repartirNovedadFlota(db, eventId, ev) {
   if(!ev || !['alta','cambio','baja'].includes(ev.accion))return {aceptadas:0,fallidas:0};
   const lista=await db.collection('push_subscriptions').where('activo','==',true).get();
   let aceptadas=0,fallidas=0,duplicadas=0;
-  const items=lista.docs;
+  // No enviar información a usuarios deshabilitados, aunque conserve una suscripción antigua.
+  const ids=[...new Set(lista.docs.map(d=>d.data().userId).filter(Boolean))];
+  const activeProfiles=await Promise.all(ids.map(async uid=>{
+    const profile=await db.collection('usuarios').doc(uid).get();
+    return profile.exists && profile.data().activo===true &&
+      ['Admin','Encargado','Vendedor'].includes(profile.data().rol) ? uid : null;
+  }));
+  const habilitados=new Set(activeProfiles.filter(Boolean));
+  const items=lista.docs.filter(d=>habilitados.has(d.data().userId));
   for(let start=0;start<items.length;start+=12){
     await Promise.all(items.slice(start,start+12).map(async subDoc=>{
       const sub=subDoc.data();
