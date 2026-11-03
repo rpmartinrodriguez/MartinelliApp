@@ -188,7 +188,7 @@
                     <div id="dolar-widget-container" class="hidden"></div>
                     
                     <div class="relative" id="notif-container">
-                        <button onclick="document.getElementById('notif-dropdown').classList.toggle('hidden')" class="p-2.5 bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-green-600 transition-colors relative">
+                        <button id="notif-toggle" type="button" aria-label="Abrir notificaciones" aria-expanded="false" aria-controls="notif-dropdown" onclick="window.togglePanelNotificaciones(event)" class="p-2.5 bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-green-600 transition-colors relative">
                             <i data-lucide="bell" class="w-5 h-5"></i>
                             <span id="notif-badge" class="absolute -top-1 -right-1 flex h-3 w-3 hidden">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -197,9 +197,9 @@
                         </button>
                         <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-50 slide-up">
                             <div class="p-4 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 flex justify-between items-center">
-                                <h3 class="font-black text-sm uppercase tracking-wider">Notificaciones</h3><div class="flex flex-wrap justify-end items-center gap-3"><button id="btn-probar-push" type="button" onclick="window.probarPushDispositivo()" title="Enviar una notificación de prueba a este teléfono" class="text-[10px] font-black text-blue-600 hover:underline">Probar push</button><button id="btn-activar-push" type="button" onclick="window.activarPush()" title="Activar avisos en el teléfono" class="text-[10px] font-black text-green-600 hover:underline">Activar push</button></div>
+                                <div class="flex items-center gap-2"><h3 class="font-black text-sm uppercase tracking-wider">Notificaciones</h3><button type="button" onclick="window.cerrarPanelNotificaciones()" title="Cerrar panel" aria-label="Cerrar panel de notificaciones" class="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800"><i data-lucide="x" class="w-4 h-4"></i></button></div><div class="flex flex-wrap justify-end items-center gap-3"><button id="btn-probar-push" type="button" onclick="window.probarPushDispositivo()" title="Enviar una notificación de prueba a este teléfono" class="text-[10px] font-black text-blue-600 hover:underline">Probar push</button><button id="btn-activar-push" type="button" onclick="window.activarPush()" title="Activar avisos en el teléfono" class="text-[10px] font-black text-green-600 hover:underline">Activar push</button></div>
                             </div>
-                            <div id="notif-list" class="max-h-96 overflow-y-auto no-scrollbar"></div>
+                            <div class="px-4 py-2 border-b border-neutral-100 dark:border-neutral-800 flex justify-between items-center"><span class="text-[10px] text-neutral-500">Abrí un aviso para ver su detalle</span><button type="button" id="notif-mark-all" onclick="window.marcarTodasNotificacionesVistas()" class="text-[10px] font-bold text-green-700 hover:underline hidden">Marcar todas vistas</button></div><div id="notif-list" class="max-h-96 overflow-y-auto no-scrollbar"></div>
                         </div>
                     </div>
                 </div>
@@ -617,6 +617,7 @@
     <script src="js/crm-indices.js"></script>
     <script src="js/flota-novedades.js"></script>
     <script src="js/push-cliente.js"></script>
+    <script src="js/notificaciones-centro.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
