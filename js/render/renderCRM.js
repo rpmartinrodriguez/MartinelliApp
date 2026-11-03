@@ -17,9 +17,16 @@ window.renderClientesView = () => {
             <button onclick="window.abrirFormularioCliente()" class="bg-black text-white dark:bg-white dark:text-black px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center w-full sm:w-auto justify-center shrink-0">
                 <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i> Nuevo Cliente
             </button>
-            <div class="relative w-full sm:w-96">
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto flex-1 justify-end">
+              <select id="crm-status-filter" onchange="window.renderClientesView()" aria-label="Filtrar clientes CRM" class="w-full sm:w-auto rounded-xl px-3 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 font-bold text-sm">
+                <option value="activos" selected>Clientes activos</option>
+                <option value="cerrados">Clientes cerrados</option>
+                <option value="todos">Todos los clientes</option>
+              </select>
+              <div class="relative w-full sm:w-80">
                 <i data-lucide="search" class="absolute left-4 top-3.5 w-4 h-4 text-neutral-400"></i>
                 <input type="text" id="search-crm" onkeyup="window.renderClientesView()" oninput="window.renderClientesView()" placeholder="Buscar por nombre, teléfono o interés..." class="w-full pl-11 pr-4 py-2.5 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200 dark:border-neutral-700 rounded-xl outline-none font-bold text-sm focus:border-green-500 transition-colors shadow-sm">
+              </div>
             </div>
         `;
         if (window.lucide) {
@@ -28,6 +35,9 @@ window.renderClientesView = () => {
     }
 
     let leads = window.state.consultas || [];
+    const estadoFiltro = document.getElementById('crm-status-filter')?.value || 'activos';
+    if(estadoFiltro==='activos')leads=leads.filter(c=>!window.crmClienteCerrado?.(c));
+    else if(estadoFiltro==='cerrados')leads=leads.filter(c=>window.crmClienteCerrado?.(c));
     const query = (document.getElementById('search-crm')?.value || '').toLowerCase();
 
     // Filtro estricto por roles para privacidad del CRM
