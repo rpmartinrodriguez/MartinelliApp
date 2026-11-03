@@ -108,6 +108,28 @@ service cloud.firestore {
     // Envíos se administran solo desde el servidor (Firebase Admin SDK).
     match /push_envios/{id} { allow read, write: if false; }
 
+    // Novedades compartidas de Flota. No contiene datos sensibles de clientes.
+    match /flota_novedades/{id} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && request.resource.data.usuarioId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['accion','descripcion','fechaMs','usuarioId','vehiculoId'])
+        && request.resource.data.accion in ['alta','cambio','baja']
+        && request.resource.data.descripcion is string
+        && request.resource.data.fechaMs is number;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    // Estado de lectura de cada empleado (un documento por UID).
+    match /flota_lecturas/{uid} {
+      allow get: if isMember() && uid == request.auth.uid;
+      allow list: if false;
+      allow create, update: if isMember() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ultimaVistaMs'])
+        && request.resource.data.ultimaVistaMs is number;
+      allow delete: if false;
+    }
+
     // Todo dato fuera de las colecciones conocidas queda denegado.
     match /{document=**} {
       allow read, write: if false;
