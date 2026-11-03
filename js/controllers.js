@@ -45,53 +45,19 @@ window.formatInputMoney = (input) => {
 // --------------------------------------------------------
 
 window.calcularTermometroLead = (lead) => {
-    let score = 50; 
-    
-    if (!lead) return { score: 0, estado: 'Frío' };
-
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const fechaAlta = new Date(lead.fecha || todayStr);
-    
-    const diasAntiguedad = Math.floor((today - fechaAlta) / (1000 * 60 * 60 * 24));
-
-    if (diasAntiguedad <= 3) {
-        score += 20; 
-    } else if (diasAntiguedad <= 7) {
-        score += 10; 
-    } else if (diasAntiguedad > 30) {
-        score -= 20; 
-    }
-
-    if (lead.historial && lead.historial.length > 0) {
-        score += (lead.historial.length * 5); 
-        
-        const completados = lead.historial.filter(h => h.completado);
-        const pendientes = lead.historial.filter(h => !h.completado && h.proximoContacto);
-
-        score += (completados.length * 10);
-
-        pendientes.forEach(p => {
-            if (p.proximoContacto < todayStr) {
-                score -= 15; 
-            } else {
-                score += 15; 
-            }
-        });
-    } else {
-        score -= 15; 
-    }
-
-    score = Math.max(0, Math.min(100, score));
-
-    let estado = 'Frío';
-    if (score >= 70) {
-        estado = 'Caliente';
-    } else if (score >= 40) {
-        estado = 'Tibio';
-    }
-
-    return { score, estado };
+    if (!lead) return { score: 0, estado: 'Frío', diasAntiguedad: 0 };
+    // El estado se determina exclusivamente por la fecha original, no por el
+    // número de llamadas, comentarios ni por la actividad del vendedor.
+    const fecha = String(lead.fecha || '').slice(0, 10);
+    const hoy = new Date();
+    const diaActual = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const parts = /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha.split('-').map(Number) : null;
+    const diaAlta = parts ? Date.UTC(parts[0], parts[1] - 1, parts[2]) : diaActual;
+    const diasAntiguedad = Math.max(0, Math.floor((diaActual - diaAlta) / 86400000));
+    const estado = diasAntiguedad <= 7 ? 'Caliente' : diasAntiguedad <= 15 ? 'Tibio' : 'Frío';
+    // Puntaje visual coherente con la clasificación por edad.
+    const score = estado === 'Caliente' ? 90 : estado === 'Tibio' ? 55 : 20;
+    return { score, estado, diasAntiguedad };
 };
 
 // --------------------------------------------------------
@@ -114,7 +80,8 @@ window.editAuto = (id) => {
     document.getElementById('auto-color').value = auto.color || ''; 
     document.getElementById('auto-km').value = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : ''; 
     document.getElementById('auto-anio').value = auto.año; 
-    document.getElementById('auto-patente').value = auto.patente; 
+    document.getElementById('auto-patente').value = auto.patente;
+    document.getElementById('auto-instagram').value = auto.instagramUrl || ''; 
     document.getElementById('auto-precio').value = window.formatMoney(auto.precio).replace(/[^0-9]/g, ''); 
     document.getElementById('auto-costo').value = window.formatMoney(auto.costo || 0).replace(/[^0-9]/g, ''); 
     document.getElementById('auto-condicion').value = auto.condicion || 'Propio'; 
@@ -160,7 +127,8 @@ window.handleAutoSubmit = async (e) => {
             color: document.getElementById('auto-color').value.toUpperCase(), 
             km: Number(document.getElementById('auto-km').value.replace(/[^0-9]/g, '')), 
             año: Number(document.getElementById('auto-anio').value), 
-            patente: document.getElementById('auto-patente').value.toUpperCase(), 
+            patente: document.getElementById('auto-patente').value.toUpperCase(),
+            instagramUrl: window.validarInstagramUrl(document.getElementById('auto-instagram').value), 
             precio: Number(document.getElementById('auto-precio').value.replace(/[^0-9]/g, '')), 
             costo: Number(document.getElementById('auto-costo').value.replace(/[^0-9]/g, '')), 
             condicion: document.getElementById('auto-condicion').value, 
@@ -172,6 +140,7 @@ window.handleAutoSubmit = async (e) => {
             await window.fbUpdate("autos", window.state.editingAutoId, objAuto); 
         } else { 
             objAuto.estado = 'Disponible';
+            objAuto.createdAt = Date.now();
             objAuto.gastos = [];
             objAuto.documentacion = { 
                 c08: false, 
@@ -382,7 +351,7 @@ window.abrirCajaParaGastos = () => {
     
     setTimeout(() => { 
         document.getElementById('caja-auto').value = window.state.pendingIngresoAutoId; 
-        document.getElementById('caja-tipo').value = 'gasto'; 
+        window.elegirTipoCaja('gasto'); 
     }, 500); 
 };
 
@@ -773,13 +742,15 @@ window.handleGlobalLeadSubmit = async (e) => {
     }
     
     try {
-        await window.fbAdd("consultas", {
-            autoId: null,
+        if (await window.comprobarClienteExistente(document.getElementById("gl-nombre").value, document.getElementById("gl-tel").value)) return;
+        await window.crearClienteUnico({
+            autoId: document.getElementById("gl-auto")?.value || null,
             nombre: document.getElementById('gl-nombre').value,
             telefono: document.getElementById('gl-tel').value,
             marcaInteres: document.getElementById('gl-interes').value,
+            estadoLead: 'Caliente',
             notas: document.getElementById('gl-nota').value,
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: window.fechaLocalHoy(),
             userId: window.state.currentUser.id,
             sucursalId: window.state.currentUser.sucursalId,
             historial: [] 
@@ -797,7 +768,8 @@ window.handleGlobalLeadSubmit = async (e) => {
         }
         
     } catch(err) {
-        console.error("Error guardando lead global:", err);
+        console.error("Error guardando cliente:", err);
+        alert("No se pudo guardar el cliente: " + (err.message || "revisá la conexión."));
     } finally {
         window.state.isSubmittingLead = false;
         
@@ -826,13 +798,14 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
     try {
         const auto = window.state.autos.find(x => x.id === autoId);
         
-        await window.fbAdd("consultas", { 
+        if (await window.comprobarClienteExistente(document.getElementById('dac-nombre').value,document.getElementById('dac-tel').value)) return;
+        await window.crearClienteUnico({ 
             autoId: autoId, 
             marcaInteres: `${auto.marca} ${auto.modelo}`, 
             nombre: document.getElementById('dac-nombre').value, 
             telefono: document.getElementById('dac-tel').value, 
             notas: document.getElementById('dac-nota').value, 
-            fecha: new Date().toISOString().split('T')[0],
+            fecha: window.fechaLocalHoy(),
             userId: window.state.currentUser.id, 
             sucursalId: window.state.currentUser.sucursalId, 
             historial: []
@@ -855,7 +828,8 @@ window.handleDA_CRMSubmit = async (e, autoId) => {
         }
         
     } catch (err) {
-        console.error("Error agregando lead desde detalle auto:", err);
+        console.error("Error guardando cliente del vehículo:", err);
+        alert("No se pudo guardar el cliente: " + (err.message || "revisá la conexión."));
     } finally {
         window.state.isSubmittingDALead = false;
         
@@ -885,8 +859,9 @@ window.handleEditLeadSubmit = async (e, id) => {
         const nombreLead = document.getElementById('edit-lead-nombre').value;
         const telefonoLead = document.getElementById('edit-lead-tel').value;
         const notasLead = document.getElementById('edit-lead-nota').value;
+        if (await window.comprobarClienteExistente(nombreLead, telefonoLead, id)) return;
         
-        await window.fbUpdate("consultas", id, { 
+        await window.actualizarClienteUnico(id, { 
             nombre: nombreLead, 
             telefono: telefonoLead, 
             notas: notasLead
@@ -916,7 +891,7 @@ window.handleEditLeadSubmit = async (e, id) => {
 window.deleteLead = async (id) => {
     if (confirm('¿Estás seguro de eliminar permanentemente a este interesado de tu cartera?')) {
         try {
-            await window.fbDelete("consultas", id);
+            await window.eliminarClienteUnico(id);
             
             window.closeModal('modal-detalle-lead');
             
@@ -1178,20 +1153,7 @@ window.agregarCategoria = async () => {
     } 
 };
 
-window.handleComprobanteChange = (val) => { 
-    const c = document.getElementById('caja-iva-container'); 
-    const i = document.getElementById('caja-iva'); 
-    
-    if (val === 'A') { 
-        c.classList.remove('hidden'); 
-        i.required = true; 
-    } else { 
-        c.classList.add('hidden'); 
-        i.required = false; 
-        i.value = ''; 
-    } 
-};
-
+window.handleComprobanteChange = () => window.actualizarFacturaCaja();
 window.marcarCobrado = async (id) => { 
     await window.fbUpdate("transacciones", id, { estadoCobro: 'disponible' }); 
     window.closeModal('modal-pendientes'); 
@@ -1200,6 +1162,11 @@ window.marcarCobrado = async (id) => {
 window.openModalCaja = () => {
     window.state.editingTransaccionId = null;
     document.getElementById('form-caja').reset();
+    document.getElementById('caja-moneda').value = 'ARS';
+    const fecha = document.getElementById('caja-fecha');
+    if (fecha) fecha.value = window.fechaLocalHoy();
+    window.elegirTipoCaja('ingreso');
+    window.actualizarFacturaCaja();
     const currentUser = window.state.currentUser;
     const selectedId = currentUser.rol === 'Admin'
         ? document.getElementById('caja-user-filter')?.value
@@ -1227,7 +1194,8 @@ window.editTransaccion = (id) => {
     window.state.editingTransaccionId = id;
     
     document.getElementById('caja-fecha').value = t.fecha;
-    document.getElementById('caja-tipo').value = t.tipo;
+    document.getElementById('caja-moneda').value = t.moneda === 'USD' ? 'USD' : 'ARS';
+    window.elegirTipoCaja(t.tipo);
     document.getElementById('caja-desc').value = t.descripcion;
     document.getElementById('caja-cat').value = t.categoria;
     document.getElementById('caja-monto').value = window.formatMoney(t.valor).replace(/[^0-9]/g, '');
@@ -1237,7 +1205,9 @@ window.editTransaccion = (id) => {
     }
     if (document.getElementById('caja-comprobante')) {
         document.getElementById('caja-comprobante').value = t.tipoComprobante || 'X';
-        if (window.handleComprobanteChange) window.handleComprobanteChange(t.tipoComprobante || 'X');
+        const facturada = document.getElementById('caja-facturada');
+        if (facturada) facturada.checked = ['A','B','C'].includes(t.tipoComprobante);
+        window.actualizarFacturaCaja();
     }
     if (document.getElementById('caja-comp-num')) {
         document.getElementById('caja-comp-num').value = t.numComprobante || '';
@@ -1369,6 +1339,7 @@ window.handleCajaSubmit = async (e) => {
         const descTx = document.getElementById('caja-desc').value;
         const catTx = document.getElementById('caja-cat').value;
         const montoTx = Number(document.getElementById('caja-monto').value.replace(/[^0-9]/g, ''));
+        const monedaTx = document.getElementById('caja-moneda').value === 'USD' ? 'USD' : 'ARS';
         const fDate = document.getElementById('caja-fecha').value;
 
         const selectedTarget = window.state.currentUser.rol === 'Admin' && !window.state.editingTransaccionId
@@ -1390,10 +1361,11 @@ window.handleCajaSubmit = async (e) => {
             descripcion: descTx, 
             categoria: catTx,
             valor: montoTx,
+            moneda: monedaTx,
             autoId: autoIdSel, 
-            tipoComprobante: document.getElementById('caja-comprobante').value,
-            numComprobante: document.getElementById('caja-comp-num').value, 
-            iva: Number(document.getElementById('caja-iva').value.replace(/[^0-9]/g, '') || 0),
+            tipoComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comprobante').value : 'X',
+            numComprobante: document.getElementById('caja-facturada')?.checked ? document.getElementById('caja-comp-num').value : '', 
+            iva: document.getElementById('caja-facturada')?.checked && document.getElementById('caja-comprobante').value === 'A' ? Math.round(montoTx * 21 / 121) : 0,
             estadoCobro: 'disponible'
         };
 

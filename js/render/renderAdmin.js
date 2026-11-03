@@ -73,6 +73,8 @@ window.renderResumenesView = () => {
 
     // 4. Análisis de Caja Chica (Ingresos y Egresos del Mes)
     const transaccionesMes = (window.state.transacciones || []).filter(t => {
+        // No mezclar importes USD con los indicadores contables en pesos.
+        if (t.moneda === 'USD') return false;
         const d = new Date(t.fecha);
         return d.getMonth() === mesActual && d.getFullYear() === añoActual;
     });
@@ -98,9 +100,10 @@ window.renderResumenesView = () => {
     // 5. Análisis CRM y Seguimiento Vendedores
     const leads = window.state.consultas || [];
     const totalLeads = leads.length;
-    const leadsCalientes = leads.filter(l => l.estadoLead === 'Caliente').length;
-    const leadsTibios = leads.filter(l => l.estadoLead === 'Tibio').length;
-    const leadsFrios = leads.filter(l => l.estadoLead === 'Frío').length;
+    const activos = leads.filter(l => l.estadoLead !== 'Vendido');
+    const leadsCalientes = activos.filter(l => window.calcularTermometroLead(l).estado === 'Caliente').length;
+    const leadsTibios = activos.filter(l => window.calcularTermometroLead(l).estado === 'Tibio').length;
+    const leadsFrios = activos.filter(l => window.calcularTermometroLead(l).estado === 'Frío').length;
 
     const porcCaliente = totalLeads > 0 ? (leadsCalientes / totalLeads) * 100 : 0;
     const porcTibio = totalLeads > 0 ? (leadsTibios / totalLeads) * 100 : 0;

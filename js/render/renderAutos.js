@@ -114,10 +114,7 @@ window.renderAutosView = () => {
         
       const kmFmt = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : 0;
 
-      const interesados = leadsPermitidos.filter(c => {
-          const interes = (c.marcaInteres || '').toLowerCase();
-          return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-      });
+      const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
       const badgeInteresados = interesados.length > 0 
           ? `<div class="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg flex items-center z-20 animate-pulse"><i data-lucide="zap" class="w-3 h-3 mr-1"></i> ${interesados.length} INTERESADOS</div>` 
           : '';
@@ -126,6 +123,7 @@ window.renderAutosView = () => {
         <div onclick="window.openDetalleAuto('${auto.id}')" class="group cursor-pointer bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] p-2 shadow-sm hover:shadow-lg transition-all hover:border-green-500/50 relative overflow-hidden">
           <div class="bg-neutral-50/50 dark:bg-neutral-800/50 rounded-[2rem] p-6 h-full flex flex-col relative">
             ${badgeInteresados}
+            <div class="absolute top-2 right-2 z-30">${window.instagramLinkAuto?.(auto)}</div>
             <div class="flex justify-between items-start mb-4">
               <div class="flex flex-col space-y-1 mt-1">
                 <div class="flex items-center space-x-2">
@@ -208,16 +206,13 @@ window.renderAutosView = () => {
         
       const kmFmt = auto.km ? new Intl.NumberFormat('es-AR').format(auto.km) : 0;
 
-      const interesados = leadsPermitidos.filter(c => {
-          const interes = (c.marcaInteres || '').toLowerCase();
-          return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-      });
+      const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
       const interesIcon = interesados.length > 0 ? `<i data-lucide="zap" class="w-3 h-3 text-indigo-500 inline ml-2 animate-pulse" title="${interesados.length} Interesados"></i>` : '';
 
       listHtml += `
         <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer transition-colors" onclick="window.openDetalleAuto('${auto.id}')">
           <td class="px-6 py-4">
-            <p class="font-bold uppercase">${auto.marca} ${auto.modelo} ${interesIcon}</p>
+            <p class="font-bold uppercase">${auto.marca} ${auto.modelo} ${interesIcon} ${window.instagramLinkAuto?.(auto)}</p>
             <p class="text-xs text-neutral-500 font-bold mt-1">Año ${auto.año}</p>
           </td>
           <td class="px-6 py-4 font-mono text-sm font-bold uppercase">${auto.patente}</td>
@@ -257,6 +252,7 @@ window.renderDetalleAuto = () => {
   const totalInv = auto.gastos?.reduce((ac, g) => ac + g.monto, 0) || 0;
   
   document.getElementById('da-header-actions').innerHTML = `
+    ${window.instagramLinkAuto?.(auto)}
     <button onclick="window.toggleEstadoAuto('${auto.id}')" class="px-3 py-1 bg-amber-500 text-black text-[10px] font-black rounded-lg uppercase mr-2 hover:scale-105 transition-transform">
       Cambiar a ${auto.estado === 'Disponible' ? 'A Ingresar' : 'Disponible'}
     </button>
@@ -282,10 +278,7 @@ window.renderDetalleAuto = () => {
     leadsPermitidos = leadsPermitidos.filter(c => validUsers.includes(c.userId));
   }
 
-  const interesados = leadsPermitidos.filter(c => {
-      const interes = (c.marcaInteres || '').toLowerCase();
-      return interes.includes(auto.marca.toLowerCase()) || interes.includes(auto.modelo.toLowerCase());
-  });
+  const interesados = leadsPermitidos.filter(c => window.coincidenciasClientesFlota(c, [auto]).length > 0);
   
   if (!window.state.isVentaMode) {
     let badgeClass = auto.estado === 'Señado' ? 'bg-purple-800 text-white dark:bg-purple-300 dark:text-purple-900' : 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900';
@@ -501,23 +494,10 @@ window.renderDetalleAuto = () => {
        html += `
          <div>
            ${potencialesHtml}
-           <form id="btn-submit-lead-auto" onsubmit="window.handleDA_CRMSubmit(event, '${auto.id}')" class="bg-neutral-50 dark:bg-neutral-800/50 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-700 mb-6">
-             <h4 class="font-bold mb-4 text-sm uppercase text-neutral-500 tracking-wider">
-               Cargar Interesado Manual
-             </h4>
-             <div class="grid grid-cols-2 gap-4">
-               <input id="dac-nombre" required placeholder="Nombre" class="w-full mb-4 rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none focus:border-green-500 font-bold" />
-               <input id="dac-tel" required placeholder="Teléfono" class="w-full mb-4 rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none focus:border-green-500 font-bold" />
-             </div>
-             <textarea id="dac-nota" placeholder="Notas..." class="w-full mb-4 rounded-xl px-4 py-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none resize-none focus:border-green-500 font-bold"></textarea>
-             <button type="submit" class="w-full py-3 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold shadow-lg hover:scale-[1.02] transition-transform flex justify-center items-center">
-               <span id="txt-submit-lead-auto">Guardar Lead</span>
-             </button>
-           </form>
-           
+           <button type="button" onclick="window.abrirFormularioCliente('${auto.id}')" class="w-full py-3 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold mb-4">Agregar Cliente</button>
            <div class="mt-4">
              <h5 class="font-bold text-xs uppercase mb-2 text-neutral-500 tracking-wider">
-               Leads Vinculados Manualmente
+               Clientes vinculados
              </h5>
              <div class="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
                ${listHtml}

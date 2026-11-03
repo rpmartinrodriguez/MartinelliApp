@@ -1,0 +1,10 @@
+{
+  "name": "martinelli-autos-pwa",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "web-push": "^3.6.7",
+    "@netlify/functions": "^6.0.3"
+  }
+}

@@ -117,21 +117,32 @@ window.renderCajaView = () => {
     // Ordenamos cronológicamente (las más antiguas primero para calcular el saldo progresivo)
     transacciones.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-    let saldo = 0;
+    // Cada divisa tiene su propio saldo. Movimientos históricos sin moneda = ARS.
+    let saldoARS = 0;
+    let saldoUSD = 0;
     let totalIngresos = 0;
     let totalEgresos = 0;
     let rowsHtml = '';
-    
+    const admin = currentRole === 'Admin';
+    const montoMoneda = (monto,moneda) => moneda === 'USD'
+      ? 'U$S ' + new Intl.NumberFormat('es-AR',{maximumFractionDigits:2}).format(monto)
+      : window.formatMoney(monto);
+
     transacciones.forEach(t => {
         const monto = Number(t.valor) || 0;
-        
-        if (t.tipo === 'ingreso') {
-            saldo += monto;
+        const moneda = t.moneda === 'USD' ? 'USD' : 'ARS';
+        if (moneda === 'USD') {
+            saldoUSD += t.tipo === 'ingreso' ? monto : -monto;
+        } else if (t.tipo === 'ingreso') {
+            saldoARS += monto;
             totalIngresos += monto;
         } else {
-            saldo -= monto;
+            saldoARS -= monto;
             totalEgresos += monto;
         }
+        const saldoFila = moneda === 'USD'
+          ? (admin ? montoMoneda(saldoUSD, 'USD') : '<span class="text-xs font-medium text-neutral-400">Solo administrador</span>')
+          : montoMoneda(saldoARS, 'ARS');
 
         const montoClass = t.tipo === 'ingreso' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500';
         const signo = t.tipo === 'ingreso' ? '+' : '-';
@@ -200,10 +211,10 @@ window.renderCajaView = () => {
                     ${userName}
                 </td>
                 <td class="px-6 py-4 text-right font-black ${montoClass}">
-                    ${signo} ${window.formatMoney(monto)}
+                    ${signo} ${montoMoneda(monto, moneda)}
                 </td>
                 <td class="px-6 py-4 text-right font-black text-lg text-neutral-800 dark:text-neutral-200 flex justify-end items-center">
-                    ${window.formatMoney(saldo)}
+                    ${saldoFila}
                     ${btnAcciones}
                 </td>
             </tr>
@@ -230,14 +241,14 @@ window.renderCajaView = () => {
             <p class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 flex items-center">
                 <i data-lucide="arrow-down-left" class="w-4 h-4 mr-2 text-green-500"></i> Ingresos Totales
             </p>
-            <p class="text-2xl font-black text-green-600 dark:text-green-500">${window.formatMoney(totalIngresos)}</p>
+            <p class="text-2xl font-black text-green-600 dark:text-green-500">${window.formatMoney(totalIngresos)}<span class="block text-[10px] text-neutral-400 mt-2">Operaciones expresadas en pesos ($)</span></p>
         </div>
         
         <div class="bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 p-6 rounded-3xl shadow-sm transition-transform hover:scale-[1.02]">
             <p class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 flex items-center">
                 <i data-lucide="arrow-up-right" class="w-4 h-4 mr-2 text-rose-500"></i> Egresos Totales
             </p>
-            <p class="text-2xl font-black text-rose-600 dark:text-rose-500">${window.formatMoney(totalEgresos)}</p>
+            <p class="text-2xl font-black text-rose-600 dark:text-rose-500">${window.formatMoney(totalEgresos)}<span class="block text-[10px] text-neutral-400 mt-2">Operaciones expresadas en pesos ($)</span></p>
         </div>
         
         <div class="bg-black text-white dark:bg-white dark:text-black p-6 rounded-3xl shadow-xl flex flex-col justify-center relative overflow-hidden transition-transform hover:scale-[1.02]">
@@ -248,8 +259,11 @@ window.renderCajaView = () => {
                 Saldo Operativo Final
             </p>
             <p class="text-4xl font-black relative z-10">
-                ${window.formatMoney(saldo)}
+                ${window.formatMoney(saldoARS)}
             </p>
+            ${admin ? `<div class="mt-4 pt-3 border-t border-white/20 dark:border-black/20 relative z-10"><p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Saldo U$S · solo administración</p><p class="text-xl font-black">${montoMoneda(saldoUSD, "USD")}</p></div>` : ""}
+            <p class="text-[10px] relative z-10 mt-2 opacity-70">Saldo principal en pesos ($)</p>
+
         </div>
     `;
 

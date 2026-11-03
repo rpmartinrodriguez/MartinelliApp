@@ -285,3 +285,20 @@ input[type="number"]::-webkit-outer-spin-button {
   #print-content { margin: 0; padding: 0; }
   #print-content h2 { break-after: avoid; page-break-after: avoid; }
 }
+
+/* Caja: identificación visual inmediata según ingreso o egreso. */
+#modal-caja[data-tipo="ingreso"] #form-caja input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+#modal-caja[data-tipo="ingreso"] #form-caja select,
+#modal-caja[data-tipo="ingreso"] #form-caja textarea {
+  background-color:#f0fdf4 !important; border-color:#bbf7d0 !important; color:#14532d !important;
+}
+#modal-caja[data-tipo="gasto"] #form-caja input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+#modal-caja[data-tipo="gasto"] #form-caja select,
+#modal-caja[data-tipo="gasto"] #form-caja textarea {
+  background-color:#fff1f2 !important; border-color:#fecdd3 !important; color:#881337 !important;
+}
+#modal-caja #caja-label-ingreso, #modal-caja #caja-label-gasto {min-width:0}
+
+#modal-caja[data-tipo="gasto"] #caja-destino-info {
+ background-color:#fff1f2!important; border-color:#fecdd3!important; color:#991b1b!important;
+}

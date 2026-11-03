@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function authenticated() {
+      return request.auth != null;
+    }
+    function profilePath() {
+      return /databases/$(database)/documents/usuarios/$(request.auth.uid);
+    }
+    function isMember() {
+      return authenticated()
+        && exists(profilePath())
+        && get(profilePath()).data.activo == true
+        && get(profilePath()).data.rol in ['Admin', 'Encargado', 'Vendedor'];
+    }
+    function isAdmin() {
+      return isMember() && get(profilePath()).data.rol == 'Admin';
+    }
+    function isManager() {
+      return isMember() && get(profilePath()).data.rol in ['Admin', 'Encargado'];
+    }
+
+    // Cada perfil tiene por ID exactamente el UID de Firebase Authentication.
+    // Crear el primer Admin manualmente desde la consola Firestore.
+    match /usuarios/{uid} {
+      allow get: if authenticated() && (request.auth.uid == uid || isMember());
+      allow list: if isMember();
+      allow create, update: if isAdmin()
+        && !request.resource.data.keys().hasAny(['password', 'contrasena', 'clave']);
+      // No borrar perfiles para mantener el historial: marcar activo=false.
+      allow delete: if false;
+    }
+
+    match /sucursales/{id} {
+      allow read: if isMember();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Modulos operativos: lectura para personal habilitado; no permite
+    // borrar registros desde un usuario no administrador.
+    match /autos/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+    match /transacciones/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+    match /ventas/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+    // TRANSICIÓN: compatibilidad con código publicado en main.
+    // La privacidad entre vendedores AÚN NO se fuerza en Firebase en esta fase.
+    // Reemplazar por firestore.rules al actualizar la aplicación en producción.
+    match /consultas/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+    // Un índice de coincidencias sin acceso a los datos de la cartera ajena.
+    match /crm_indices/{hash} {
+      allow get: if isMember();
+      allow list: if false;
+      allow create: if isMember() && request.resource.data.keys().hasOnly(['userId','clienteId','fecha'])
+        && request.resource.data.keys().hasAll(['userId','clienteId'])
+        && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      allow update: if false;
+      allow delete: if isAdmin() || (isMember() && resource.data.userId == request.auth.uid);
+    }
+    match /formularios/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember();
+      allow delete: if isAdmin();
+    }
+    match /comisiones/{id} {
+      allow read: if isMember();
+      allow create, update: if isManager();
+      allow delete: if isAdmin();
+    }
+    match /cierres_personal/{id} {
+      allow read: if isMember();
+      allow create, update: if isManager();
+      allow delete: if isAdmin();
+    }
+
+    // Suscripciones: cada usuario registra exclusivamente sus propios dispositivos.
+    match /push_subscriptions/{id} {
+      allow get, list: if isMember() && resource.data.userId == request.auth.uid;
+      allow create: if isMember() && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['userId','endpoint','keys','activo','creadoEn']);
+      allow update: if isMember() && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if isMember() && resource.data.userId == request.auth.uid;
+    }
+    // Envíos se administran solo desde el servidor (Firebase Admin SDK).
+    match /push_envios/{id} { allow read, write: if false; }
+
+    // Novedades compartidas de Flota. No contiene datos sensibles de clientes.
+    match /flota_novedades/{id} {
+      allow read: if isMember();
+      allow create: if isMember()
+        && request.resource.data.usuarioId == request.auth.uid
+        && request.resource.data.keys().hasOnly(['accion','descripcion','fechaMs','usuarioId','vehiculoId'])
+        && request.resource.data.accion in ['alta','cambio','baja']
+        && request.resource.data.descripcion is string
+        && request.resource.data.fechaMs is number;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    // Estado de lectura de cada empleado (un documento por UID).
+    match /flota_lecturas/{uid} {
+      allow get: if isMember() && uid == request.auth.uid;
+      allow list: if false;
+      allow create, update: if isMember() && uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ultimaVistaMs'])
+        && request.resource.data.ultimaVistaMs is number;
+      allow delete: if false;
+    }
+
+    // Todo dato fuera de las colecciones conocidas queda denegado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
