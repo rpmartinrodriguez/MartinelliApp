@@ -1,0 +1,27 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.martinelliautos.prueba'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.martinelliautos.prueba'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0-prueba'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ''
+        }
+    }
+}
+
+dependencies {
+    // Implementación oficial para Trusted Web Activities de Chrome.
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
