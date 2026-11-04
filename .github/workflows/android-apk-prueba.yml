@@ -7,6 +7,12 @@ on:
       - "android/**"
       - ".github/workflows/android-apk-prueba.yml"
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-apk-prueba.yml"
 
 permissions:
   contents: read
