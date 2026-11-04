@@ -30,10 +30,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Instalar Android API 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Preparar Android SDK incluido en GitHub Runner
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          command -v sdkmanager || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          fi
+          "$SDKMANAGER" --version
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
