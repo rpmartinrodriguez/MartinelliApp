@@ -108,33 +108,42 @@ window.renderCajaView = () => {
     // Ordenamos cronológicamente (las más antiguas primero para calcular el saldo progresivo)
     transacciones.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-    // Cada divisa tiene su propio saldo. Movimientos históricos sin moneda = ARS.
-    let saldoARS = 0;
-    let saldoUSD = 0;
-    let totalIngresos = 0;
-    let totalEgresos = 0;
-    let rowsHtml = '';
-    const admin = currentRole === 'Admin';
-    const montoMoneda = (monto,moneda) => moneda === 'USD'
-      ? 'U$S ' + new Intl.NumberFormat('es-AR',{maximumFractionDigits:2}).format(monto)
+    // Calcular saldos independientes del buscador y filtro de medio.
+    // Movimientos históricos sin medio de pago explícito quedan en efectivo
+    // provisionalmente, sin cambiar ningún dato guardado.
+    let saldoARS=0, saldoEfectivo=0, saldoTransferencias=0, saldoUSD=0;
+    let totalIngresos=0, totalEgresos=0, rowsHtml='';
+    const admin=currentRole==='Admin';
+    const montoMoneda=(monto,moneda)=>moneda==='USD'
+      ? 'U$S '+new Intl.NumberFormat('es-AR',{maximumFractionDigits:2}).format(monto)
       : window.formatMoney(monto);
-
-    transacciones.forEach(t => {
-        const monto = Number(t.valor) || 0;
-        const moneda = t.moneda === 'USD' ? 'USD' : 'ARS';
-        if (moneda === 'USD') {
-            saldoUSD += t.tipo === 'ingreso' ? monto : -monto;
-        } else if (t.tipo === 'ingreso') {
-            saldoARS += monto;
-            totalIngresos += monto;
-        } else {
-            saldoARS -= monto;
-            totalEgresos += monto;
-        }
-        const saldoFila = moneda === 'USD'
-          ? (admin ? montoMoneda(saldoUSD, 'USD') : '<span class="text-xs font-medium text-neutral-400">Solo administrador</span>')
-          : montoMoneda(saldoARS, 'ARS');
-
+    const saldoPorRegistro=new WeakMap();
+    baseMovimientos.slice().sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)).forEach(t=>{
+      const monto=Number(t.valor)||0,signo=t.tipo==='ingreso'?1:-1;
+      if(t.moneda==='USD'){
+        saldoUSD+=signo*monto;
+      }else{
+        saldoARS+=signo*monto;
+        if(window.medioPagoMovimientoCaja(t)==='transferencia')saldoTransferencias+=signo*monto;
+        else saldoEfectivo+=signo*monto;
+        if(signo>0)totalIngresos+=monto;else totalEgresos+=monto;
+      }
+      saldoPorRegistro.set(t,{
+        cash:saldoEfectivo,transferencia:saldoTransferencias,usd:saldoUSD
+      });
+    });
+    const legacyCount=baseMovimientos.filter(t=>
+      t.moneda!=='USD'&&window.medioCajaPendienteClasificacion(t)).length;
+    transacciones.forEach(t=>{
+      const monto=Number(t.valor)||0,moneda=t.moneda==='USD'?'USD':'ARS';
+      const medio=window.medioPagoMovimientoCaja(t);
+      const saldoFilaDatos=saldoPorRegistro.get(t)||{cash:0,transferencia:0,usd:0};
+      const saldoFila=moneda==='USD'
+        ? (admin?montoMoneda(saldoFilaDatos.usd,'USD'):'<span class="text-xs text-neutral-400">Solo administrador</span>')
+        : montoMoneda(medio==='transferencia'?saldoFilaDatos.transferencia:saldoFilaDatos.cash,'ARS');
+      const marcaMedio=medio==='transferencia'
+        ? '<span class="inline-block ml-2 text-[9px] text-indigo-700 dark:text-indigo-300 font-bold">TRANSFERENCIA</span>'
+        : '<span class="inline-block ml-2 text-[9px] text-green-700 dark:text-green-400 font-bold">EFECTIVO</span>';
         const montoClass = t.tipo === 'ingreso' ? 'text-green-600 dark:text-green-500' : 'text-rose-600 dark:text-rose-500';
         const signo = t.tipo === 'ingreso' ? '+' : '-';
         
@@ -194,7 +203,7 @@ window.renderCajaView = () => {
                         ${t.descripcion} ${badgeEditado}
                     </p>
                     <p class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1">
-                        ${t.categoria} ${detalleFactura}
+                        ${t.categoria} ${marcaMedio} ${detalleFactura}
                     </p>
                     ${detalleAuto}
                 </td>
@@ -246,15 +255,24 @@ window.renderCajaView = () => {
             <div class="absolute -right-4 -bottom-4 opacity-10">
                 <i data-lucide="wallet" class="w-32 h-32"></i>
             </div>
-            <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80 relative z-10">
-                Saldo Operativo Final
-            </p>
-            <p class="text-4xl font-black relative z-10">
-                ${window.formatMoney(saldoARS)}
-            </p>
-            ${admin ? `<div class="mt-4 pt-3 border-t border-white/20 dark:border-black/20 relative z-10"><p class="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">Saldo U$S · solo administración</p><p class="text-xl font-black">${montoMoneda(saldoUSD, "USD")}</p></div>` : ""}
-            <p class="text-[10px] relative z-10 mt-2 opacity-70">Saldo principal en pesos ($)</p>
-
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-75 relative z-10">Saldo de Caja · Efectivo</p>
+            <p class="text-4xl font-black relative z-10">${window.formatMoney(saldoEfectivo)}</p>
+            <div class="mt-4 pt-3 border-t border-white/20 dark:border-black/20 relative z-10 flex justify-between gap-3">
+              <div>
+                <p class="text-[10px] uppercase font-bold opacity-70">Transferencias</p>
+                <p class="text-lg font-black">${window.formatMoney(saldoTransferencias)}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] uppercase font-bold opacity-70">Total combinado</p>
+                <p class="text-lg font-black">${window.formatMoney(saldoARS)}</p>
+              </div>
+            </div>
+            ${admin ? `<div class="mt-3 pt-3 border-t border-white/20 dark:border-black/20 relative z-10">
+              <p class="text-[10px] font-bold uppercase opacity-70">Saldo U$S · solo administración</p>
+              <p class="text-xl font-black">${montoMoneda(saldoUSD,'USD')}</p></div>` : ''}
+            ${legacyCount ? `<p class="text-[10px] mt-3 opacity-70 relative z-10">
+              ${legacyCount} movimiento(s) histórico(s) sin medio identificado: asignados provisionalmente a efectivo.
+              Podés revisarlos y editar el medio sin modificar el importe.</p>` : ''}
         </div>
     `;
 
