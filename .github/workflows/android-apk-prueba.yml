@@ -52,10 +52,14 @@ jobs:
       - name: Compilar APK de prueba
         working-directory: android
         run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Comprobar que Android reconoce el iniciador
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|launchable-activity:|sdkVersion:|targetSdkVersion:"
+          unzip -t android/app/build/outputs/apk/debug/app-debug.apk | tail -1
       - name: Publicar instalador para descargar
         uses: actions/upload-artifact@v4
         with:
-          name: Martinelli-Autos-Android-APK-prueba
+          name: Martinelli-Autos-Android-APK-prueba-2
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
