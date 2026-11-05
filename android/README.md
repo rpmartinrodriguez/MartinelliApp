@@ -1,32 +1,44 @@
-# Martinelli Autos — APK de prueba para Android
+# Martinelli Autos — Android, prueba 2
 
-Esta carpeta empaqueta la PWA oficial mediante **Trusted Web Activity (TWA)**.
-La APK NO contiene una copia de Firestore, NO crea una base de datos nueva y NO modifica los datos de producción.
+Esta versión reemplaza el inicio TWA silencioso de la primera APK por una
+**pantalla Android nativa con botones visibles** y apertura automática en Chrome
+Custom Tabs. Si el arranque integrado falla, se puede abrir el mismo sitio en
+el navegador. La web que abre es:
 
-- Sitio que abre: https://martinelli-autos.netlify.app/
-- Proyecto Android: `com.martinelliautos.prueba`
-- Compilación de prueba: GitHub Actions genera `app-debug.apk`.
-- En teléfonos con Chrome u otro navegador compatible, abre la web real. Los datos se sincronizan como en la PWA.
-- Los cambios web publicados en Netlify se muestran sin reconstruir la APK, salvo cambios nativos/manifest/icono.
-- Las notificaciones push dependen de la autorización del navegador y el sitio y deben probarse en un dispositivo real.
+https://martinelli-autos.netlify.app/
 
-## Diferencia importante con una versión TWA verificada
+**No contiene una copia de los datos** ni crea una base Firebase nueva. Abre la
+misma versión oficial que se usa en PC y en la web.
 
-Para quitar por completo la barra del navegador, Android requiere que
-`https://martinelli-autos.netlify.app/.well-known/assetlinks.json`
-publique la huella SHA-256 del certificado que firma la APK. **Esta rama
-no toca producción** y por eso **la APK de prueba puede mostrar barra de Chrome**.
-No es un fallo del inicio de sesión ni una base de datos distinta.
+## Instalación
 
-La APK debug usa la firma de prueba generada en GitHub Actions. Si volvés a
-compilar con otra clave, puede que debas desinstalar la anterior antes de
-instalar una nueva. No emplear esta APK debug como una distribución permanente.
+- Nombre: Martinelli Autos (Prueba 2)
+- Identificador Android: `com.martinelliautos.prueba2`
+- Android mínimo: 7.0 (API 24).
+- Con Chrome actualizado se abre en vista integrada; si no funciona,
+  tocar "Abrir directamente en el navegador".
+- Es una **APK debug firmada para pruebas**, no una aplicación lista para
+  distribuir indefinidamente.
+- La nueva APK tiene **otro identificador**: puede instalarse al lado de
+  "Martinelli Autos (Prueba)" de la primera versión. Conviene desinstalar la
+  primera para no confundirlas.
+- Si se recompila en otro servidor con distinta firma debug, para actualizar
+  la misma versión de prueba podría ser necesario desinstalarla primero.
 
-## Crear APK de prueba
+## Lo que aún requiere validación
 
-En GitHub, en el repositorio `rpmartinrodriguez/MartinelliApp`, entrar a
-**Actions → Android APK de prueba → Run workflow**, elegir esta rama.
-Al terminar, descargar el artefacto `Martinelli-Autos-Android-APK-prueba`
-y extraer el archivo `app-debug.apk`.
+- Inicio de sesión y carga de Flota, CRM y Caja desde Android.
+- Notificaciones push en el modo Chrome Custom Tabs: todavía no están
+  confirmadas. La delegación de notificaciones nativas en una TWA requiere
+  configuración/verificación del dominio con un certificado de firma **estable**.
+- Pantalla completa real: la asociación `assetlinks.json` y un paquete firmado
+  permanentemente se abordarán después de probar el arranque en el celular.
 
-No instalar versiones de terceros ni compartir credenciales de Firebase.
+## Crear el instalador
+
+Entrar a GitHub → Actions → Android APK de prueba → elegir esta rama.
+La automatización crea el artefacto
+`Martinelli-Autos-Android-APK-prueba-2` con `app-debug.apk`.
+
+No modificar Firestore ni el dominio para probar. Sin Internet no se
+garantiza la sincronización.
