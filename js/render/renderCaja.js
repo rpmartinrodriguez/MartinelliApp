@@ -27,91 +27,82 @@ window.renderCajaView = () => {
         }
     }
 
-    // 2. Construir el contenedor de Filtros (Buscador + Dropdown de Rol)
-    if (filterContainer && !document.getElementById('caja-filters-wrapper')) {
-        let optionsHtml = `<option value="">Todas mis cajas visibles</option>`;
-        let usersToFilter = [];
-        
-        if (currentRole === 'Admin') {
-            usersToFilter = window.state.usuarios;
-        } else if (currentRole === 'Encargado') {
-            usersToFilter = window.state.usuarios.filter(u => u.sucursalId === currentSuc && u.rol !== 'Admin');
-        } else {
-            usersToFilter = [window.state.currentUser];
-        }
-
-        let roleFilterHtml = '';
-        if (usersToFilter.length > 1) {
-            usersToFilter.forEach(u => {
-                optionsHtml += `<option value="${u.id}">${u.nombre} (${u.rol})</option>`;
-            });
-            
-            roleFilterHtml = `
-                <div class="flex items-center space-x-2 bg-white dark:bg-neutral-900 p-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
-                    <i data-lucide="filter" class="w-4 h-4 text-neutral-400 ml-2"></i>
-                    <select id="caja-user-filter" onchange="window.renderCajaView()" class="bg-transparent border-none outline-none text-sm font-bold text-neutral-700 dark:text-neutral-300 pr-2 cursor-pointer focus:ring-0">
-                        ${optionsHtml}
-                    </select>
-                </div>
-            `;
-        }
-
-        filterContainer.innerHTML = `
-            <div id="caja-filters-wrapper" class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <div class="relative w-full sm:w-72">
-                    <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-neutral-400"></i>
-                    <input type="text" id="search-caja" oninput="window.renderCajaView()" placeholder="Buscar por detalle, monto, auto..." class="w-full pl-9 pr-4 py-2 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md border border-neutral-200 dark:border-neutral-800 rounded-xl text-sm font-bold outline-none focus:border-green-500 transition-colors shadow-sm">
-                </div>
-                ${roleFilterHtml}
-            </div>
-        `;
-        
+    // Selección por botones, usando nombres reales de Firebase.
+    const safe = v => String(v ?? '').replace(/[&<>"']/g, k =>
+        ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[k]));
+    const users = (window.state.usuarios || []).slice();
+    if(!users.some(u=>u.id===currentUserId))users.unshift(window.state.currentUser);
+    const disponibles = currentRole === 'Admin' ? users :
+        currentRole === 'Encargado' ? users.filter(u=>u.sucursalId===currentSuc && u.rol!=='Admin') :
+        [window.state.currentUser];
+    if(window.state.cajaFiltroUsuario && !disponibles.some(u=>u.id===window.state.cajaFiltroUsuario))
+        window.state.cajaFiltroUsuario='';
+    const signature=currentRole+':'+disponibles.map(u=>u.id+'|'+u.nombre).join(';');
+    if(filterContainer && (filterContainer.dataset.signature!==signature || !document.getElementById('caja-filters-wrapper'))){
+        const previousSearch=document.getElementById('search-caja')?.value || '';
+        const previousManager=document.getElementById('caja-user-filter')?.value || '';
+        const mkBtn=(id,name,rol='')=>`<button type="button" data-caja-usuario="${safe(id)}"
+          onclick="window.seleccionarCajaUsuario(this.dataset.cajaUsuario)"
+          class="rounded-xl px-3 py-2 text-xs font-bold border transition-colors">
+          ${safe(name)}${rol?' · '+safe(rol):''}</button>`;
+        const adminButtons=currentRole==='Admin' ?
+          `<div><p class="text-[10px] uppercase font-black text-neutral-500 mb-2">Seleccionar caja</p>
+          <div class="flex flex-wrap gap-2">${mkBtn('','Todas las cajas')}
+          ${disponibles.map(u=>mkBtn(u.id,u.nombre||'Usuario',u.rol||'')).join('')}</div></div>` : '';
+        const encargadoSelect=currentRole==='Encargado' && disponibles.length>1 ?
+          `<select id="caja-user-filter" onchange="window.state.cajaFiltroUsuario=this.value;window.renderCajaView()"
+          class="rounded-xl border p-2 bg-white dark:bg-neutral-900"><option value="">Todas las cajas visibles</option>
+          ${disponibles.map(u=>`<option value="${safe(u.id)}">${safe(u.nombre)}</option>`).join('')}</select>` : '';
+        filterContainer.innerHTML=`<div id="caja-filters-wrapper" class="flex flex-col gap-3 w-full mb-3">
+          ${adminButtons}<div class="flex flex-wrap items-center gap-3">
+          <input id="search-caja" type="text" oninput="window.renderCajaView()" placeholder="Buscar movimientos..."
+            class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2 text-sm w-full sm:w-64">
+          ${encargadoSelect}
+          <div class="flex flex-wrap gap-2" aria-label="Filtrar medio de pago">
+          ${[['todos','Todos'],['efectivo','Efectivo'],['transferencia','Transferencias']].map(([v,label])=>
+            `<button type="button" data-caja-medio-filtro="${v}" onclick="window.filtrarMedioCaja('${v}')"
+               class="rounded-xl border px-3 py-2 text-xs font-bold">${label}</button>`).join('')}
+          </div></div></div>`;
+        filterContainer.dataset.signature=signature;
         filterContainer.classList.remove('hidden');
+        document.getElementById('search-caja').value=previousSearch;
+        if(document.getElementById('caja-user-filter'))document.getElementById('caja-user-filter').value=previousManager;
     }
-
-    // 3. Obtener valores de los filtros activos
-    const selectedUserId = document.getElementById('caja-user-filter')?.value || '';
-    const searchQuery = (document.getElementById('search-caja')?.value || '').toLowerCase().trim();
-    
-    // 4. Filtrar las transacciones
-    let transacciones = (window.state.transacciones || []).filter(t => {
-        // ESCUDO ANTI-BORRADOS LÓGICOS
-        if (t.eliminado === true) return false;
-        
-        let isVisible = false;
-        
-        if (currentRole === 'Admin') {
-            isVisible = true;
-        } else if (currentRole === 'Vendedor') {
-            isVisible = (t.userId === currentUserId);
-        } else if (currentRole === 'Encargado') {
-            const tUser = window.state.usuarios.find(u => u.id === t.userId);
-            if (tUser && tUser.sucursalId === currentSuc && tUser.rol !== 'Admin') {
-                isVisible = true;
-            }
-        }
-
-        if (isVisible && selectedUserId !== '') {
-            if (t.userId !== selectedUserId) {
-                isVisible = false;
-            }
-        }
-
-        if (isVisible && searchQuery !== '') {
-            let autoStr = '';
-            if (t.autoId) {
-                const a = window.state.autos.find(x => x.id === t.autoId);
-                if (a) autoStr = `${a.marca} ${a.modelo} ${a.patente}`;
-            }
-            
-            const combinedStr = `${t.descripcion} ${t.categoria} ${t.valor} ${t.tipoComprobante || ''} ${t.numComprobante || ''} ${autoStr}`.toLowerCase();
-            
-            if (!combinedStr.includes(searchQuery)) {
-                isVisible = false;
-            }
-        }
-        
-        return isVisible;
+    const selectedUserId = currentRole==='Admin' ? (window.state.cajaFiltroUsuario||'') :
+        currentRole==='Encargado' ? (document.getElementById('caja-user-filter')?.value||window.state.cajaFiltroUsuario||'') : '';
+    const searchQuery=(document.getElementById('search-caja')?.value||'').toLowerCase().trim();
+    const filtroMedio=window.state.cajaFiltroMedio||'todos';
+    document.querySelectorAll('[data-caja-usuario]').forEach(b=>{
+      const active=b.dataset.cajaUsuario===selectedUserId;
+      b.setAttribute('aria-pressed',String(active));
+      b.className='rounded-xl px-3 py-2 text-xs font-bold border transition-colors '+(active?
+        'bg-black text-white border-black dark:bg-white dark:text-black':
+        'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700');
+    });
+    document.querySelectorAll('[data-caja-medio-filtro]').forEach(b=>{
+      const active=b.dataset.cajaMedioFiltro===filtroMedio;
+      b.setAttribute('aria-pressed',String(active));
+      b.className='rounded-xl border px-3 py-2 text-xs font-bold '+(active?
+        'bg-green-600 text-white border-green-600':
+        'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700');
+    });
+    // Los saldos usan todos los movimientos autorizados de la caja seleccionada.
+    const baseMovimientos=(window.state.transacciones||[]).filter(t=>{
+      if(t.eliminado===true)return false;
+      let visible=currentRole==='Admin'||(currentRole==='Vendedor'&&t.userId===currentUserId);
+      if(currentRole==='Encargado'){
+        const u=users.find(u=>u.id===t.userId);
+        visible=!!(u&&u.sucursalId===currentSuc&&u.rol!=='Admin');
+      }
+      return visible&&(!selectedUserId||t.userId===selectedUserId);
+    });
+    let transacciones=baseMovimientos.filter(t=>{
+      if(filtroMedio!=='todos'&&window.medioPagoMovimientoCaja(t)!==filtroMedio)return false;
+      if(!searchQuery)return true;
+      const a=t.autoId?window.state.autos.find(x=>x.id===t.autoId):null;
+      return [t.descripcion,t.categoria,t.valor,t.tipoComprobante,t.numComprobante,
+        a?[a.marca,a.modelo,a.patente].join(' '):'',window.medioPagoMovimientoCaja(t)]
+        .join(' ').toLowerCase().includes(searchQuery);
     });
 
     // Ordenamos cronológicamente (las más antiguas primero para calcular el saldo progresivo)
