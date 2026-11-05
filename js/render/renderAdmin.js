@@ -73,6 +73,9 @@ window.renderResumenesView = () => {
 
     // 4. Análisis de Caja Chica (Ingresos y Egresos del Mes)
     const transaccionesMes = (window.state.transacciones || []).filter(t => {
+        // Incluye efectivo Y transferencias: la categoría define el gasto,
+        // no el medio empleado para pagarlo.
+        if (t.eliminado === true) return false;
         // No mezclar importes USD con los indicadores contables en pesos.
         if (t.moneda === 'USD') return false;
         const d = new Date(t.fecha);

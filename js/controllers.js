@@ -257,6 +257,7 @@ window.handleGastoTallerSubmit = async (e, autoId) => {
                 sucursalId: window.state.currentUser.sucursalId, 
                 fecha: fDate, 
                 tipo: 'gasto',
+                medioPago: 'efectivo',
                 descripcion: `Gasto Taller: ${auto.marca} ${auto.modelo} - ${desc}`, 
                 categoria: cat, 
                 valor: monto, 
@@ -512,14 +513,14 @@ window.handleDAVentaSubmit = async (e, autoId) => {
         // --- CAJA ADMIN ---
         if (vEfectivo > 0) {
             await window.fbAdd("transacciones", {
-                fecha: fDate, tipo: 'ingreso', valor: vEfectivo, categoria: 'Venta Vehículos',
+                fecha: fDate, tipo: 'ingreso', medioPago: 'efectivo', valor: vEfectivo, categoria: 'Venta Vehículos',
                 descripcion: `Entrega Venta (Efectivo): ${auto.marca} ${auto.modelo} (${notaEfectivo})`,
                 userId: adminUser.id, sucursalId: adminUser.sucursalId, tipoComprobante: 'X', numComprobante: '', iva: 0, estadoCobro: 'disponible', fechaAcreditacion: null
             });
         }
         if (vTransferencia > 0) {
             await window.fbAdd("transacciones", {
-                fecha: fDate, tipo: 'ingreso', valor: vTransferencia, categoria: 'Venta Vehículos',
+                fecha: fDate, tipo: 'ingreso', medioPago: 'transferencia', valor: vTransferencia, categoria: 'Venta Vehículos',
                 descripcion: `Entrega Venta (Transf a ${destTransferencia}): ${auto.marca} ${auto.modelo}`,
                 userId: adminUser.id, sucursalId: adminUser.sucursalId, tipoComprobante: 'X', numComprobante: '', iva: 0, estadoCobro: 'disponible', fechaAcreditacion: null
             });
@@ -1181,11 +1182,12 @@ window.openModalCaja = () => {
     const fecha = document.getElementById('caja-fecha');
     if (fecha) fecha.value = window.fechaLocalHoy();
     window.elegirTipoCaja('ingreso');
+    window.elegirMedioCaja?.('efectivo');
     window.actualizarFacturaCaja();
     const currentUser = window.state.currentUser;
     const selectedId = currentUser.rol === 'Admin'
-        ? document.getElementById('caja-user-filter')?.value
-        : null;
+        ? (window.state.cajaFiltroUsuario || '')
+        : (document.getElementById('caja-user-filter')?.value || '');
     const targetUser = selectedId
         ? window.state.usuarios.find(u => u.id === selectedId)
         : currentUser;
@@ -1211,6 +1213,7 @@ window.editTransaccion = (id) => {
     document.getElementById('caja-fecha').value = t.fecha;
     document.getElementById('caja-moneda').value = t.moneda === 'USD' ? 'USD' : 'ARS';
     window.elegirTipoCaja(t.tipo);
+    window.elegirMedioCaja?.(window.medioPagoMovimientoCaja?.(t) || 'efectivo');
     document.getElementById('caja-desc').value = t.descripcion;
     document.getElementById('caja-cat').value = t.categoria;
     document.getElementById('caja-monto').value = window.formatMoney(t.valor).replace(/[^0-9]/g, '');
@@ -1351,6 +1354,7 @@ window.handleCajaSubmit = async (e) => {
     try {
         const autoIdSel = document.getElementById('caja-auto').value || null;
         const tipoTx = document.getElementById('caja-tipo').value;
+        const medioTx = document.getElementById('caja-medio')?.value === 'transferencia' ? 'transferencia' : 'efectivo';
         const descTx = document.getElementById('caja-desc').value;
         const catTx = document.getElementById('caja-cat').value;
         const montoTx = Number(document.getElementById('caja-monto').value.replace(/[^0-9]/g, ''));
@@ -1373,6 +1377,7 @@ window.handleCajaSubmit = async (e) => {
             registradoPorNombre: window.state.currentUser.nombre,
             fecha: fDate, 
             tipo: tipoTx,
+            medioPago: medioTx,
             descripcion: descTx, 
             categoria: catTx,
             valor: montoTx,
@@ -1397,7 +1402,8 @@ window.handleCajaSubmit = async (e) => {
                     fecha: oldTx.fecha,
                     descripcion: oldTx.descripcion,
                     categoria: oldTx.categoria,
-                    monto: oldTx.valor
+                    monto: oldTx.valor,
+                    medioPago: window.medioPagoMovimientoCaja?.(oldTx) || 'efectivo'
                 }
             });
 
@@ -1435,7 +1441,8 @@ window.handleCajaSubmit = async (e) => {
                     fecha: fDate, 
                     descripcion: descTx, 
                     categoria: catTx, 
-                    monto: montoTx, 
+                    monto: montoTx,
+                    medioPago: medioTx,
                     fueraDeCaja: false 
                 };
 
@@ -1504,7 +1511,8 @@ window.cobrarCuotaVenta = async (ventaId, tipo) => {
             await window.fbAdd("transacciones", { 
                 fecha: fechaHoy, 
                 descripcion: `Cobro Cuota ${numeroDeCuota} (${tipo === 'credito' ? 'Crédito' : 'Pagaré'}): ${venta.compradorNombre} - ${venta.autoDesc}`, 
-                tipo: 'ingreso', 
+                tipo: 'ingreso',
+                medioPago: 'efectivo',
                 categoria: 'Venta Vehículos', 
                 valor: montoACobrar, 
                 userId: userQueRegistra.id, 
