@@ -1,0 +1,65 @@
+name: Android APK de prueba
+on:
+  push:
+    branches:
+      - android-apk-prueba-2026-11
+    paths:
+      - "android/**"
+      - ".github/workflows/android-apk-prueba.yml"
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "android/**"
+      - ".github/workflows/android-apk-prueba.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Generar APK Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout rama de prueba
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Preparar Android SDK incluido en GitHub Runner
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          command -v sdkmanager || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          fi
+          "$SDKMANAGER" --version
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Copiar icono original de Martinelli
+        run: |
+          mkdir -p android/app/src/main/res/drawable-nodpi
+          curl -fL --retry 3 --connect-timeout 15 https://martinelli-autos.netlify.app/icon.png -o android/app/src/main/res/drawable-nodpi/app_icon.png
+          file android/app/src/main/res/drawable-nodpi/app_icon.png
+      - name: Compilar APK de prueba
+        working-directory: android
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Comprobar que Android reconoce el iniciador
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging android/app/build/outputs/apk/debug/app-debug.apk | grep -E "package:|launchable-activity:|sdkVersion:|targetSdkVersion:"
+          unzip -t android/app/build/outputs/apk/debug/app-debug.apk | tail -1
+      - name: Publicar instalador para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Martinelli-Autos-Android-APK-prueba-2
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
